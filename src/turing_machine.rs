@@ -1,5 +1,6 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 use std::error::Error;
+static blank_cell_default_char: char = 'B';
 pub struct TuringMachine {
     vertices: Vec<TuringVertex>,
 }
@@ -9,7 +10,7 @@ impl TuringMachine {
             vertices: Vec::<TuringVertex>::with_capacity(vertex_count),
         };
     }
-    pub fn add_edge(
+    pub fn add_transition(
         &mut self,
         from: usize,
         to: usize,
@@ -17,9 +18,9 @@ impl TuringMachine {
         accepted_string: &str,
         move_direction: &str,
     ) -> Result<(), &'static str> {
-        let move_dir_parsed: MovementDirection = match move_direction {
-            "Left" => MovementDirection::Left,
-            "Right" => MovementDirection::Right,
+        let move_dir_parsed: MovementDirection = match move_direction.to_lowercase().as_str() {
+            "left" | "l" => MovementDirection::Left,
+            "right" | "r" => MovementDirection::Right,
             _ => return Err("Invalid move direction, accepts only 'Left' or 'Right'"),
         };
         if !(0..self.vertices.len()).contains(&from) || !(0..self.vertices.len()).contains(&to) {
@@ -36,6 +37,7 @@ impl TuringMachine {
         }
         return Ok(());
     }
+    pub fn process_string_input() {}
 }
 struct TuringVertex {
     pub transitions: Vec<TuringTransition>,
@@ -77,4 +79,25 @@ struct TuringTransition {
 enum MovementDirection {
     Left,
     Right,
+}
+struct TuringTape {
+    tape: VecDeque<char>,
+    reading_head_position: usize,
+}
+impl TuringTape {
+    fn from_string_input(input: &str) -> Self {
+        let mut tape: VecDeque<char> = input.chars().collect();
+        for i in 0..3 {
+            //artbitrary as the blank cells get added dynamically
+            tape.push_front(blank_cell_default_char);
+            tape.push_back(blank_cell_default_char);
+        }
+        return TuringTape {
+            tape: tape,
+            reading_head_position: 3,
+        };
+    }
+    fn current_cell_input(&self) -> String {
+        self.tape[self.reading_head_position].clone().to_string()
+    }
 }
