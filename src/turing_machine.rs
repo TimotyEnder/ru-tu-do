@@ -5,10 +5,18 @@ pub struct TuringMachine {
     vertices: Vec<TuringVertex>,
 }
 impl TuringMachine {
-    pub fn new(vertex_count: usize) -> Self {
-        return TuringMachine {
-            vertices: Vec::<TuringVertex>::with_capacity(vertex_count),
+    pub fn new(vertex_count: usize, list_of_accepting: &[usize]) -> Self {
+        let mut to_ret: TuringMachine = TuringMachine {
+            vertices: Vec::<TuringVertex>::new(),
         };
+        for i in 0..vertex_count {
+            to_ret.add_vertex(TuringVertex {
+                transitions: Vec::<TuringTransition>::new(),
+                set_of_accepted_strings_from_vertex: HashSet::<String>::new(),
+                accepting: list_of_accepting.contains(&i),
+            });
+        }
+        return to_ret;
     }
     pub fn add_transition(
         &mut self,
@@ -37,11 +45,15 @@ impl TuringMachine {
         }
         return Ok(());
     }
+    fn add_vertex(&mut self, vertex: TuringVertex) {
+        self.vertices.push(vertex);
+    }
     pub fn process_string_input() {}
 }
 struct TuringVertex {
     pub transitions: Vec<TuringTransition>,
     pub set_of_accepted_strings_from_vertex: HashSet<String>,
+    pub accepting: bool,
 }
 impl<'a> TuringVertex {
     fn add_transition(
@@ -76,6 +88,7 @@ struct TuringTransition {
     next_state_index: Option<usize>,
     move_direction: MovementDirection,
 }
+#[derive(PartialEq)]
 enum MovementDirection {
     Left,
     Right,
@@ -87,7 +100,7 @@ struct TuringTape {
 impl TuringTape {
     fn from_string_input(input: &str) -> Self {
         let mut tape: VecDeque<char> = input.chars().collect();
-        for i in 0..3 {
+        for _ in 0..3 {
             //artbitrary as the blank cells get added dynamically
             tape.push_front(blank_cell_default_char);
             tape.push_back(blank_cell_default_char);
@@ -99,5 +112,15 @@ impl TuringTape {
     }
     fn current_cell_input(&self) -> String {
         self.tape[self.reading_head_position].clone().to_string()
+    }
+    fn move_tape(&mut self, move_direction: MovementDirection) {
+        if self.reading_head_position == 0 && move_direction == MovementDirection::Left {
+            self.tape.push_front(blank_cell_default_char);
+        } else if self.reading_head_position + 1 >= self.tape.len()
+            && move_direction == MovementDirection::Right
+        {
+            self.tape.push_back(blank_cell_default_char);
+            self.reading_head_position += 1;
+        }
     }
 }
