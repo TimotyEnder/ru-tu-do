@@ -53,6 +53,8 @@ impl TuringMachine {
     pub fn process_string_input(&self, input: &str) -> (VecDeque<String>, bool, usize) {
         let mut tape = TuringTape::from_string_input(input);
         let mut current_state = self.start_state;
+        print!("Initial state:\n");
+        self.print_machine_state(&tape, &current_state);
         while !self.vertices[current_state].accepting
             && let Some(direction) =
                 self.vertices[current_state].write_and_next_move(&mut tape, &mut current_state)
@@ -67,7 +69,6 @@ impl TuringMachine {
         );
     }
     fn print_machine_state(&self, tape: &TuringTape, current_state: &usize) {
-        print!("\n");
         print!("Current State ->[Q{}]\n", current_state);
         for tape_elem_index in 0..(tape.tape.len()) {
             if tape_elem_index == tape.reading_head_position {
@@ -130,7 +131,7 @@ impl<'a> TuringVertex {
     }
     fn print_transition_taken(&self, transition: &TuringTransition) {
         print!(
-            "->Q{} write:{} move:{}\n",
+            "\n->Q{} write:{} move:{}\n\n",
             {
                 match transition.next_state_index {
                     Some(index) => index.to_string(),
