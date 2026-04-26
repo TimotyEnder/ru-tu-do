@@ -3,11 +3,13 @@ use std::error::Error;
 static BLANK_CELL_DEFAULT_CHAR: &str = "B";
 pub struct TuringMachine {
     vertices: Vec<TuringVertex>,
+    start_state: usize,
 }
 impl TuringMachine {
-    pub fn new(vertex_count: usize, list_of_accepting: &[usize]) -> Self {
+    pub fn new(vertex_count: usize, list_of_accepting: &[usize], start_state: &usize) -> Self {
         let mut to_ret: TuringMachine = TuringMachine {
             vertices: Vec::<TuringVertex>::new(),
+            start_state: *start_state,
         };
         for i in 0..vertex_count {
             to_ret.add_vertex(TuringVertex {
@@ -48,7 +50,21 @@ impl TuringMachine {
     fn add_vertex(&mut self, vertex: TuringVertex) {
         self.vertices.push(vertex);
     }
-    pub fn process_string_input() {}
+    pub fn process_string_input(&self, input: &str) -> (VecDeque<String>, bool, usize) {
+        let mut tape = TuringTape::from_string_input(input);
+        let mut current_state = self.start_state;
+        while !self.vertices[current_state].accepting
+            && let Some(direction) =
+                self.vertices[current_state].write_and_next_move(&mut tape, &mut current_state)
+        {
+            tape.move_tape(direction);
+        }
+        return (
+            tape.tape,
+            self.vertices[tape.reading_head_position].accepting,
+            tape.reading_head_position,
+        );
+    }
 }
 struct TuringVertex {
     pub transitions: Vec<TuringTransition>,
@@ -80,11 +96,19 @@ impl<'a> TuringVertex {
             return true;
         }
     }
-    pub fn write_and_next_move(&self, tape: &mut TuringTape) -> Option<MovementDirection> {
+    pub fn write_and_next_move(
+        &self,
+        tape: &mut TuringTape,
+        current_state: &mut usize,
+    ) -> Option<MovementDirection> {
         let tape_input = tape.current_cell_input();
         for transition in &self.transitions {
             if transition.accepted_string == tape_input {
                 tape.write(&transition.to_write);
+                *current_state = match transition.next_state_index {
+                    Some(index) => index,
+                    None => *current_state,
+                };
                 return Some(transition.move_direction.clone());
             }
         }
@@ -134,6 +158,11 @@ impl TuringTape {
         {
             self.tape.push_back(BLANK_CELL_DEFAULT_CHAR.to_string());
             self.reading_head_position += 1;
+        } else {
+            match move_direction {
+                MovementDirection::Left => self.reading_head_position -= 1,
+                MovementDirection::Right => self.reading_head_position += 1,
+            }
         }
     }
 }
