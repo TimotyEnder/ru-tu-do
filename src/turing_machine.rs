@@ -58,12 +58,25 @@ impl TuringMachine {
                 self.vertices[current_state].write_and_next_move(&mut tape, &mut current_state)
         {
             tape.move_tape(direction);
+            self.print_machine_state(&tape, &current_state);
         }
         return (
             tape.tape,
-            self.vertices[tape.reading_head_position].accepting,
+            self.vertices[current_state].accepting,
             tape.reading_head_position,
         );
+    }
+    fn print_machine_state(&self, tape: &TuringTape, current_state: &usize) {
+        print!("\n");
+        print!("Current State ->[Q{}]\n", current_state);
+        for tape_elem_index in 0..(tape.tape.len()) {
+            if tape_elem_index == tape.reading_head_position {
+                print!("[{}]", tape.tape[tape_elem_index]);
+            } else {
+                print!("{}", tape.tape[tape_elem_index]);
+            }
+        }
+        print!("\n");
     }
 }
 struct TuringVertex {
@@ -109,10 +122,29 @@ impl<'a> TuringVertex {
                     Some(index) => index,
                     None => *current_state,
                 };
+                self.print_transition_taken(transition);
                 return Some(transition.move_direction.clone());
             }
         }
         return None;
+    }
+    fn print_transition_taken(&self, transition: &TuringTransition) {
+        print!(
+            "->Q{} write:{} move:{}\n",
+            {
+                match transition.next_state_index {
+                    Some(index) => index.to_string(),
+                    None => "No index".to_owned(),
+                }
+            },
+            transition.to_write,
+            {
+                match transition.move_direction {
+                    MovementDirection::Left => "Left",
+                    MovementDirection::Right => "Right",
+                }
+            }
+        )
     }
 }
 

@@ -9,12 +9,12 @@ fn main() {
     turing_mach.add_transition(0, 1, "B", "B", "l").unwrap();
     turing_mach.add_transition(1, 1, "A", "A", "l").unwrap();
     turing_mach.add_transition(1, 1, "C", "C", "l").unwrap();
-    turing_mach.add_transition(1, 1, "B", "B", "r").unwrap();
+    turing_mach.add_transition(1, 2, "B", "B", "r").unwrap();
     let (tape, accepted, final_head_position) = turing_mach.process_string_input("AACCCAA");
-    println!("{:?}", tape);
+    println!("\n{:?}", tape);
     print!(
-        "final head position is on the {}th element",
+        "final head position is on the {}th element\n",
         final_head_position
     );
-    print!("accepted? {}", accepted);
+    print!("accepted? {}\n", accepted);
 }
