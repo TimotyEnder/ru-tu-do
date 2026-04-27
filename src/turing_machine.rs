@@ -62,6 +62,14 @@ impl TuringMachine {
     fn add_vertex(&mut self, vertex: TuringVertex) {
         self.vertices.push(vertex);
     }
+    pub fn add_vertex_button_handler(&mut self) {
+        let vertex = TuringVertex {
+            transitions: Vec::<TuringTransition>::new(),
+            set_of_accepted_strings_from_vertex: HashSet::<String>::new(),
+            accepting: false,
+        };
+        self.vertices.push(vertex);
+    }
     pub fn process_string_input(&self, input: &str) -> (VecDeque<String>, bool, usize) {
         let mut tape = TuringTape::from_string_input(input);
         let mut current_state = self.start_state;
@@ -80,6 +88,15 @@ impl TuringMachine {
             tape.reading_head_position,
         );
     }
+    pub fn step(&self, tape: &mut TuringTape, current_state: &mut usize) -> bool {
+        if let Some(direction) =
+            self.vertices[*current_state].write_and_next_move(tape, current_state)
+        {
+            return true;
+        } else {
+            return false;
+        };
+    }
     fn print_machine_state(&self, tape: &TuringTape, current_state: &usize) {
         print!("Current State ->[Q{}]\n", current_state);
         for tape_elem_index in 0..(tape.tape.len()) {
@@ -92,6 +109,7 @@ impl TuringMachine {
         print!("\n");
     }
 }
+
 struct TuringVertex {
     pub transitions: Vec<TuringTransition>,
     pub set_of_accepted_strings_from_vertex: HashSet<String>,
@@ -172,12 +190,12 @@ enum MovementDirection {
     Left,
     Right,
 }
-struct TuringTape {
-    tape: VecDeque<String>,
+pub struct TuringTape {
+    pub(crate) tape: VecDeque<String>,
     reading_head_position: usize,
 }
 impl TuringTape {
-    fn from_string_input(input: &str) -> Self {
+    pub fn from_string_input(input: &str) -> Self {
         let mut tape: VecDeque<String> = input.chars().map(|c: char| c.to_string()).collect();
         for _ in 0..3 {
             //artbitrary as the blank cells get added dynamically
@@ -191,6 +209,9 @@ impl TuringTape {
     }
     fn current_cell_input(&self) -> String {
         self.tape[self.reading_head_position].clone().to_string()
+    }
+    pub fn current_cell_index(&self) -> usize {
+        return self.reading_head_position;
     }
     fn write(&mut self, to_write: &str) {
         self.tape[self.reading_head_position] = to_write.to_string();

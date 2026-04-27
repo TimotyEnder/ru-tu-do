@@ -5,13 +5,13 @@ use core::num;
 use eframe::egui;
 use egui::{Vec2, ahash::random_state::set_random_source, response};
 
-use crate::turing_machine::TuringMachine;
+use crate::turing_machine::{TuringMachine, TuringTape};
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_min_inner_size([620.0, 400.0])
-            .with_inner_size([650.0, 520.0])
+            .with_min_inner_size([800.0, 600.0])
+            .with_inner_size([800.0, 600.0])
             .with_resizable(true) // This makes window non-resizable
             .with_title("Ru-Tu-Do"),
         ..Default::default()
@@ -31,30 +31,39 @@ struct RuToDoUI {
     to_transition_field: String,
     write_transition_field: String,
     accept_transition_field: String,
-    machine: TuringMachine,
     transition_move_opt: String,
+    //
+    machine: TuringMachine,
+    //
     error_popup_txt: String,
     error_popus_shown: bool,
+    //
     popup_title: String,
     popup_text: String,
     popup_shown: bool,
+    //
     string_to_process: String,
+    tape: TuringTape,
 }
 impl Default for RuToDoUI {
     fn default() -> Self {
         return Self {
+            machine: TuringMachine::new_default(),
+
             from_transition_field: String::new(),
             to_transition_field: String::new(),
             write_transition_field: String::new(),
             accept_transition_field: String::new(),
-            machine: TuringMachine::new_default(),
             transition_move_opt: String::from("Left"),
+            string_to_process: String::new(),
+
             error_popup_txt: String::new(),
             error_popus_shown: false,
+
             popup_shown: false,
             popup_text: String::new(),
             popup_title: String::new(),
-            string_to_process: String::new(),
+            tape: TuringTape::from_string_input(""),
         };
     }
 }
@@ -84,8 +93,8 @@ impl RuToDoUI {
             egui::Window::new(&self.popup_title)
                 .collapsible(false)
                 .resizable(false)
-                .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
-                .fixed_size([200.0, 100.0])
+                .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::ZERO)
+                .fixed_size([100.0, 50.0])
                 .show(ctx, |ui| {
                     ui.label(&*self.popup_text);
                     ui.add_space(10.0);
@@ -108,8 +117,24 @@ impl RuToDoUI {
     }
 }
 impl eframe::App for RuToDoUI {
+    // ── Top Frame ─────────────────────────────────────────────────────────
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         ui.ctx().set_visuals(egui::Visuals::dark());
+        // Create a custom style with larger fonts
+        let mut style = (*ui.ctx().global_style()).clone();
+        style
+            .text_styles
+            .get_mut(&egui::TextStyle::Body)
+            .unwrap()
+            .size = 20.0;
+        style
+            .text_styles
+            .get_mut(&egui::TextStyle::Button)
+            .unwrap()
+            .size = 20.0;
+
+        // Apply the style to a specific section
+        ui.set_style(style);
         egui::Panel::top("top_panel")
             .frame(egui::Frame::NONE.inner_margin(10.0))
             .resizable(false)
@@ -120,10 +145,11 @@ impl eframe::App for RuToDoUI {
                     ui.horizontal(|ui| {
                         ui.set_width(ui.max_rect().width() * 0.10);
                         let vertex_create_button =
-                            egui::Button::new("Add Vertex").min_size(egui::Vec2::new(25.0, 50.0));
+                            egui::Button::new("Add Vertex").min_size(egui::Vec2::new(25.0, 100.0));
 
                         if ui.add(vertex_create_button).clicked() {
-                            // Handle click
+                            self.machine.add_vertex_button_handler();
+                            self.show_popup("Vertex Created", "Success");
                         }
                     });
                     ui.separator();
@@ -224,7 +250,11 @@ impl eframe::App for RuToDoUI {
                                 egui::Button::new("Process").min_size(egui::Vec2::new(50.0, 25.0));
 
                             if ui.add(string_process_button).clicked() {
-                                // Handle click
+                                if (!self.string_to_process.is_empty()) {
+                                    self.tape =
+                                        TuringTape::from_string_input(&self.string_to_process);
+                                    self.show_popup("string processed", "Success");
+                                }
                             }
                         })
                     });
@@ -243,14 +273,52 @@ impl eframe::App for RuToDoUI {
                 });
                 ui.label("")
             });
+        // ── Tape Side Panel ─────────────────────────────────────────────────────────
         egui::Panel::left("tape_panel")
             .resizable(false)
-            .min_size(32.0)
+            .min_size(ui.max_rect().width() * 0.2) // Set a sensible minimum width
             .show_inside(ui, |ui| {
+                let total_height = ui.available_height();
+                let num_cells = self.tape.tape.len();
+                let cell_height = (total_height / num_cells as f32).max(30.0); // Minimum 30px height
+
                 ui.vertical_centered(|ui| {
-                    ui.heading("Ru-Tu-Do");
+                    egui::Grid::new("single_column_grid")
+                        .num_columns(1)
+                        .striped(true)
+                        .show(ui, |ui| {
+                            for (it, tape_cell) in self.tape.tape.iter().enumerate() {
+                                // Make each cell fill the full width
+                                let available_width = ui.available_width();
+
+                                // Create a button-like cell that fills the space
+                                let response = ui.add_sized(
+                                    [available_width, cell_height],
+                                    egui::Button::new(format!("{} {}", tape_cell, {
+                                        if it == self.tape.current_cell_index() {
+                                            "<-"
+                                        } else {
+                                            ""
+                                        }
+                                    }))
+                                    .frame(true)
+                                    .fill(
+                                        if it == self.tape.current_cell_index() {
+                                            egui::Color32::from_rgb(124, 135, 238) // Blue for current cell
+                                        } else if it % 2 == 0 {
+                                            egui::Color32::from_rgb(60, 60, 60) // Dark gray for even rows
+                                        } else {
+                                            egui::Color32::from_rgb(40, 40, 40) // Lighter gray for odd rows
+                                        },
+                                    ),
+                                );
+
+                                ui.end_row();
+                            }
+                        });
                 });
             });
+        // ── Graph Panel ─────────────────────────────────────────────────────────
         egui::CentralPanel::default().show_inside(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.heading("Ru-Tu-Do");
