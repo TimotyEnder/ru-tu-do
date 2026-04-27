@@ -31,6 +31,11 @@ struct RuToDoUI {
     accept_transition_field: String,
     machine: TuringMachine,
     transition_move_opt: String,
+    error_popup_txt: String,
+    error_popus_shown: bool,
+    popup_title: String,
+    popup_text: String,
+    popup_shown: bool,
 }
 impl Default for RuToDoUI {
     fn default() -> Self {
@@ -41,12 +46,63 @@ impl Default for RuToDoUI {
             accept_transition_field: String::new(),
             machine: TuringMachine::new_default(),
             transition_move_opt: String::from("Left"),
+            error_popup_txt: String::new(),
+            error_popus_shown: false,
+            popup_shown: false,
+            popup_text: String::new(),
+            popup_title: String::new(),
         };
     }
 }
 
-// ── eframe::App impl ─────────────────────────────────────────────────────────
-
+// ── eframe::App impl and UI helper functions ─────────────────────────────────────────────────────────
+impl RuToDoUI {
+    fn error_popup(&mut self, ctx: &egui::Context) {
+        if self.error_popus_shown {
+            egui::Window::new("Error")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+                .fixed_size([200.0, 100.0])
+                .show(ctx, |ui| {
+                    ui.label(&*self.error_popup_txt);
+                    ui.add_space(10.0);
+                    ui.vertical_centered(|ui| {
+                        if ui.button("OK").clicked() {
+                            self.error_popus_shown = false;
+                        }
+                    });
+                });
+        }
+    }
+    fn popup(&mut self, ctx: &egui::Context) {
+        if self.popup_shown {
+            egui::Window::new(&self.popup_title)
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+                .fixed_size([200.0, 100.0])
+                .show(ctx, |ui| {
+                    ui.label(&*self.popup_text);
+                    ui.add_space(10.0);
+                    ui.vertical_centered(|ui| {
+                        if ui.button("OK").clicked() {
+                            self.popup_shown = false;
+                        }
+                    });
+                });
+        }
+    }
+    fn show_error_popup(&mut self, message: &str) {
+        self.error_popup_txt = String::from(message);
+        self.error_popus_shown = true;
+    }
+    fn show_popup(&mut self, message: &str, title: &str) {
+        self.popup_text = String::from(message);
+        self.popup_title = String::from(title);
+        self.popup_shown = true;
+    }
+}
 impl eframe::App for RuToDoUI {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         // Toggle theme
@@ -55,6 +111,8 @@ impl eframe::App for RuToDoUI {
             .frame(egui::Frame::NONE.inner_margin(10.0))
             .resizable(false)
             .show_inside(ui, |ui| {
+                self.error_popup(ui.ctx());
+                self.popup(ui.ctx());
                 ui.horizontal(|ui| {
                     let button =
                         egui::Button::new("Add Vector").min_size(egui::Vec2::new(50.0, 50.0));
@@ -121,14 +179,22 @@ impl eframe::App for RuToDoUI {
                                 if let (Ok(from), Ok(to)) = (
                                     self.from_transition_field.parse::<usize>(),
                                     self.to_transition_field.parse::<usize>(),
-                                ) {
-                                    self.machine.add_transition(
+                                ) && self
+                                    .machine
+                                    .add_transition(
                                         from,
                                         to,
                                         &self.write_transition_field,
                                         &self.accept_transition_field,
                                         &self.transition_move_opt,
-                                    );
+                                    )
+                                    .is_ok()
+                                {
+                                    self.show_popup("Transition created", "Success");
+                                } else {
+                                    self.show_error_popup("Error creating transition!");
+                                    self.to_transition_field.clear();
+                                    self.from_transition_field.clear();
                                 }
                             }
                         });
