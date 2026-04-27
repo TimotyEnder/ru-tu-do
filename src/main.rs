@@ -1,6 +1,7 @@
 mod turing_machine;
 
 use eframe::egui;
+use egui::{ahash::random_state::set_random_source, response};
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -19,8 +20,18 @@ fn main() -> eframe::Result {
 
 // ── App state ────────────────────────────────────────────────────────────────
 
-#[derive(Default)]
-struct RuToDoUI {}
+struct RuToDoUI {
+    from_transition_field: String,
+    to_transition_field: String,
+}
+impl Default for RuToDoUI {
+    fn default() -> Self {
+        return Self {
+            from_transition_field: String::from("Nowhere"),
+            to_transition_field: String::from("Nowhere"),
+        };
+    }
+}
 
 // ── eframe::App impl ─────────────────────────────────────────────────────────
 
@@ -32,9 +43,19 @@ impl eframe::App for RuToDoUI {
             .resizable(false)
             .min_size(32.0)
             .show_inside(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.heading("Ru-Tu-Do");
+                ui.horizontal(|ui| {
+                    if ui.button("Add Vertex").clicked() {
+                        // handle click
+                    }
+                    ui.label("from:");
+                    let response_from =
+                        ui.add(egui::TextEdit::singleline(&mut self.from_transition_field));
+                    ui.label("to:");
+                    let response_to =
+                        ui.add(egui::TextEdit::singleline(&mut self.to_transition_field));
                 });
+                // Need to return a Response here too
+                ui.label("") // Dummy response, or use something meaningful
             });
         egui::Panel::left("tape_panel")
             .resizable(false)
