@@ -127,6 +127,7 @@ impl eframe::App for RuToDoUI {
                         ui.horizontal_wrapped(|ui| {
                             ui.horizontal(|ui| {
                                 ui.label("from:");
+
                                 ui.add(
                                     egui::TextEdit::singleline(&mut self.from_transition_field)
                                         .hint_text("e.g., q0")
