@@ -116,10 +116,10 @@ impl eframe::App for RuToDoUI {
                 self.error_popup(ui.ctx());
                 self.popup(ui.ctx());
                 ui.horizontal(|ui| {
-                    let button =
-                        egui::Button::new("Add Vertex").min_size(egui::Vec2::new(50.0, 50.0));
+                    let vertex_create_button =
+                        egui::Button::new("Add Vertex").min_size(egui::Vec2::new(25.0, 50.0));
 
-                    if ui.add(button).clicked() {
+                    if ui.add(vertex_create_button).clicked() {
                         // Handle click
                     }
                     ui.separator();
@@ -146,7 +146,7 @@ impl eframe::App for RuToDoUI {
                                 ui.add(
                                     egui::TextEdit::singleline(&mut self.accept_transition_field)
                                         .hint_text("eg. A")
-                                        .desired_width(50.0),
+                                        .desired_width(70.0),
                                 );
                             });
                         });
@@ -162,7 +162,8 @@ impl eframe::App for RuToDoUI {
                             ui.horizontal(|ui| {
                                 ui.label("move:");
                                 egui::ComboBox::from_label("")
-                                    .selected_text(&self.transition_move_opt) // Pass as &str
+                                    .selected_text(&self.transition_move_opt)
+                                    .width(30.0)
                                     .show_ui(ui, |ui| {
                                         ui.selectable_value(
                                             &mut self.transition_move_opt,
@@ -176,7 +177,9 @@ impl eframe::App for RuToDoUI {
                                         );
                                     });
                             });
-                            if ui.button("Add Transition").clicked() {
+                            let add_transition_button = egui::Button::new("Add Transition")
+                                .min_size(egui::Vec2::new(10.0, 10.0));
+                            if ui.add(add_transition_button).clicked() {
                                 if let (Ok(from), Ok(to)) = (
                                     self.from_transition_field.parse::<usize>(),
                                     self.to_transition_field.parse::<usize>(),
@@ -209,14 +212,27 @@ impl eframe::App for RuToDoUI {
                                     .hint_text("eg. ABCD")
                                     .desired_width(50.0),
                             );
-                            let button =
+                            let string_process_button =
                                 egui::Button::new("Process").min_size(egui::Vec2::new(50.0, 25.0));
 
-                            if ui.add(button).clicked() {
+                            if ui.add(string_process_button).clicked() {
                                 // Handle click
                             }
                         })
-                    })
+                    });
+                    ui.separator();
+                    ui.horizontal_centered(|ui| {
+                        let step_button =
+                            egui::Button::new("Step").min_size(egui::Vec2::new(25.0, 50.0));
+                        if ui.add(step_button).clicked() {
+                            // Handle click
+                        }
+                        let reset_button =
+                            egui::Button::new("Reset").min_size(egui::Vec2::new(25.0, 50.0));
+                        if ui.add(reset_button).clicked() {
+                            // Handle click
+                        }
+                    });
                 });
                 ui.label("")
             });
