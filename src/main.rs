@@ -10,8 +10,9 @@ use crate::turing_machine::TuringMachine;
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
+            .with_min_inner_size([620.0, 400.0])
             .with_inner_size([650.0, 520.0])
-            .with_resizable(false) // This makes window non-resizable
+            .with_resizable(true) // This makes window non-resizable
             .with_title("Ru-Tu-Do"),
         ..Default::default()
     };
@@ -116,15 +117,19 @@ impl eframe::App for RuToDoUI {
                 self.error_popup(ui.ctx());
                 self.popup(ui.ctx());
                 ui.horizontal(|ui| {
-                    let vertex_create_button =
-                        egui::Button::new("Add Vertex").min_size(egui::Vec2::new(25.0, 50.0));
+                    ui.horizontal(|ui| {
+                        ui.set_width(ui.max_rect().width() * 0.10);
+                        let vertex_create_button =
+                            egui::Button::new("Add Vertex").min_size(egui::Vec2::new(25.0, 50.0));
 
-                    if ui.add(vertex_create_button).clicked() {
-                        // Handle click
-                    }
+                        if ui.add(vertex_create_button).clicked() {
+                            // Handle click
+                        }
+                    });
                     ui.separator();
                     ui.vertical(|ui| {
                         ui.horizontal_wrapped(|ui| {
+                            ui.set_width(ui.max_rect().width() * 0.25);
                             ui.horizontal(|ui| {
                                 ui.label("from:");
 
@@ -152,6 +157,7 @@ impl eframe::App for RuToDoUI {
                             });
                         });
                         ui.horizontal_wrapped(|ui| {
+                            ui.set_width(ui.max_rect().width() * 0.25);
                             ui.horizontal(|ui| {
                                 ui.label("write:");
                                 ui.add(
@@ -207,7 +213,8 @@ impl eframe::App for RuToDoUI {
                     ui.separator();
                     ui.vertical(|ui| {
                         ui.label("String to process");
-                        ui.horizontal(|ui| {
+                        ui.horizontal_centered(|ui| {
+                            ui.set_width(ui.max_rect().width() * 0.25);
                             ui.add(
                                 egui::TextEdit::singleline(&mut self.string_to_process)
                                     .hint_text("eg. ABCD")
@@ -223,6 +230,7 @@ impl eframe::App for RuToDoUI {
                     });
                     ui.separator();
                     ui.horizontal_centered(|ui| {
+                        ui.set_width(ui.max_rect().width() * 0.25);
                         let step_button = egui::Button::new("Step");
                         if ui.add_sized([30.0, 50.0], step_button).clicked() {
                             // Handle click
