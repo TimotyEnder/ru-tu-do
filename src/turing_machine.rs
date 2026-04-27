@@ -20,6 +20,18 @@ impl TuringMachine {
         }
         return to_ret;
     }
+    pub fn new_default() -> Self {
+        let mut to_ret = TuringMachine {
+            vertices: Vec::<TuringVertex>::new(),
+            start_state: 0,
+        };
+        to_ret.add_vertex(TuringVertex {
+            transitions: Vec::<TuringTransition>::new(),
+            set_of_accepted_strings_from_vertex: HashSet::<String>::new(),
+            accepting: false,
+        });
+        return to_ret;
+    }
     pub fn add_transition(
         &mut self,
         from: usize,
