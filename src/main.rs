@@ -10,7 +10,8 @@ use crate::turing_machine::TuringMachine;
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([480.0, 520.0])
+            .with_inner_size([650.0, 520.0])
+            .with_resizable(false) // This makes window non-resizable
             .with_title("Ru-Tu-Do"),
         ..Default::default()
     };
@@ -107,7 +108,6 @@ impl RuToDoUI {
 }
 impl eframe::App for RuToDoUI {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        // Toggle theme
         ui.ctx().set_visuals(egui::Visuals::dark());
         egui::Panel::top("top_panel")
             .frame(egui::Frame::NONE.inner_margin(10.0))
@@ -223,14 +223,12 @@ impl eframe::App for RuToDoUI {
                     });
                     ui.separator();
                     ui.horizontal_centered(|ui| {
-                        let step_button =
-                            egui::Button::new("Step").min_size(egui::Vec2::new(25.0, 50.0));
-                        if ui.add(step_button).clicked() {
+                        let step_button = egui::Button::new("Step");
+                        if ui.add_sized([30.0, 50.0], step_button).clicked() {
                             // Handle click
                         }
-                        let reset_button =
-                            egui::Button::new("Reset").min_size(egui::Vec2::new(25.0, 50.0));
-                        if ui.add(reset_button).clicked() {
+                        let reset_button = egui::Button::new("Reset");
+                        if ui.add_sized([30.0, 50.0], reset_button).clicked() {
                             // Handle click
                         }
                     });
