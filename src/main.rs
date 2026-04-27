@@ -36,6 +36,7 @@ struct RuToDoUI {
     popup_title: String,
     popup_text: String,
     popup_shown: bool,
+    string_to_process: String,
 }
 impl Default for RuToDoUI {
     fn default() -> Self {
@@ -51,6 +52,7 @@ impl Default for RuToDoUI {
             popup_shown: false,
             popup_text: String::new(),
             popup_title: String::new(),
+            string_to_process: String::new(),
         };
     }
 }
@@ -115,14 +117,14 @@ impl eframe::App for RuToDoUI {
                 self.popup(ui.ctx());
                 ui.horizontal(|ui| {
                     let button =
-                        egui::Button::new("Add Vector").min_size(egui::Vec2::new(50.0, 50.0));
+                        egui::Button::new("Add Vertex").min_size(egui::Vec2::new(50.0, 50.0));
 
                     if ui.add(button).clicked() {
                         // Handle click
                     }
+                    ui.separator();
                     ui.vertical(|ui| {
                         ui.horizontal_wrapped(|ui| {
-                            ui.separator();
                             ui.horizontal(|ui| {
                                 ui.label("from:");
                                 ui.add(
@@ -149,7 +151,6 @@ impl eframe::App for RuToDoUI {
                             });
                         });
                         ui.horizontal_wrapped(|ui| {
-                            ui.separator();
                             ui.horizontal(|ui| {
                                 ui.label("write:");
                                 ui.add(
@@ -199,9 +200,25 @@ impl eframe::App for RuToDoUI {
                             }
                         });
                     });
+                    ui.separator();
+                    ui.vertical(|ui| {
+                        ui.label("String to process");
+                        ui.horizontal(|ui| {
+                            ui.add(
+                                egui::TextEdit::singleline(&mut self.string_to_process)
+                                    .hint_text("eg. ABCD")
+                                    .desired_width(50.0),
+                            );
+                            let button =
+                                egui::Button::new("Process").min_size(egui::Vec2::new(50.0, 25.0));
+
+                            if ui.add(button).clicked() {
+                                // Handle click
+                            }
+                        })
+                    })
                 });
-                // Need to return a Response here too
-                ui.label("") // Dummy response, or use something meaningful
+                ui.label("")
             });
         egui::Panel::left("tape_panel")
             .resizable(false)
