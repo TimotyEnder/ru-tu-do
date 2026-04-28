@@ -13,6 +13,19 @@ impl TuringMachine {
         }
         return false;
     }
+    pub fn toggle_state_acception(&mut self, state_index: usize) -> Result<bool, &'static str> {
+        if (0..=self.vertices.len()).contains(&state_index) {
+            if self.vertices[state_index].accepting {
+                self.vertices[state_index].accepting = false;
+                return Ok(false);
+            } else {
+                self.vertices[state_index].accepting = true;
+                return Ok(true);
+            }
+        } else {
+            return Err("State index out of bounds");
+        }
+    }
     pub fn new(vertex_count: usize, list_of_accepting: &[usize], start_state: &usize) -> Self {
         let mut to_ret: TuringMachine = TuringMachine {
             vertices: Vec::<TuringVertex>::new(),

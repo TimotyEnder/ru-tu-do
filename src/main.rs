@@ -146,7 +146,7 @@ impl eframe::App for RuToDoUI {
             .size = base_font_size * 1.5;
         ui.ctx().set_global_style(style);
         egui::Panel::top("top_panel")
-            .frame(egui::Frame::NONE.inner_margin(10.0))
+            .frame(egui::Frame::NONE.inner_margin(egui::Margin::same(10)))
             .resizable(false)
             .show_inside(ui, |ui| {
                 self.error_popup(ui.ctx());
@@ -166,7 +166,7 @@ impl eframe::App for RuToDoUI {
                     ui.separator();
                     ui.vertical(|ui| {
                         ui.horizontal_wrapped(|ui| {
-                            ui.set_width(ui.max_rect().width() * 0.25);
+                            ui.set_width(ui.max_rect().width() * 0.18);
                             ui.horizontal(|ui| {
                                 ui.label("from:");
 
@@ -194,7 +194,7 @@ impl eframe::App for RuToDoUI {
                             });
                         });
                         ui.horizontal_wrapped(|ui| {
-                            ui.set_width(ui.max_rect().width() * 0.25);
+                            ui.set_width(ui.max_rect().width() * 0.18);
                             ui.horizontal(|ui| {
                                 ui.label("write:");
                                 ui.add(
@@ -255,7 +255,7 @@ impl eframe::App for RuToDoUI {
                     ui.separator();
                     ui.vertical(|ui| {
                         ui.label("String to process");
-                        ui.set_width(ui.max_rect().width() * 0.25);
+                        ui.set_width(ui.max_rect().width() * 0.18);
                         ui.add(
                             egui::TextEdit::singleline(&mut self.string_to_process)
                                 .hint_text("eg. ABCD")
@@ -273,6 +273,7 @@ impl eframe::App for RuToDoUI {
                     });
                     ui.separator();
                     ui.vertical(|ui| {
+                        ui.set_width(ui.max_rect().width() * 0.18);
                         let step_button = egui::Button::new("Step");
                         if ui
                             .add_sized(
@@ -294,48 +295,77 @@ impl eframe::App for RuToDoUI {
                             self.show_popup("Tape Reset", "Success");
                         }
                     });
-                });
-                ui.separator();
-                ui.vertical(|ui| {
-                    ui.horizontal_centered(|ui| {
+                    ui.separator();
+                    ui.vertical(|ui| {
                         ui.label("Make State:");
+                        ui.add(
+                            egui::TextEdit::singleline(&mut self.state_modifications_string_input)
+                                .hint_text("eg. ABCD")
+                                .desired_width(ui.available_width()),
+                        );
+                        ui.horizontal_centered(|ui| {
+                            let make_state_starting = egui::Button::new("Starting");
+                            if ui
+                                .add_sized(
+                                    [ui.available_width() / 2.0, ui.available_height()],
+                                    make_state_starting,
+                                )
+                                .clicked()
+                            {
+                                if let Ok(state_index_parsed) =
+                                    self.state_modifications_string_input.parse::<usize>()
+                                    && self.machine.set_start_state(state_index_parsed)
+                                {
+                                    self.show_popup(
+                                        &format!("Stating state is not Q{}", state_index_parsed),
+                                        "Success",
+                                    );
+                                } else {
+                                    self.show_error_popup("Unable to change starting state");
+                                    self.state_modifications_string_input.clear();
+                                }
+                            }
+                            let make_state_accepting = egui::Button::new("Toggle/Accepting");
+                            if ui
+                                .add_sized(
+                                    [ui.available_width(), ui.available_height()],
+                                    make_state_accepting,
+                                )
+                                .clicked()
+                            {
+                                if let Ok(state_index_parsed) =
+                                    self.state_modifications_string_input.parse::<usize>()
+                                {
+                                    if let Ok(new_state_acception) =
+                                        self.machine.toggle_state_acception(state_index_parsed)
+                                    {
+                                        self.show_popup(
+                                            &format!(
+                                                "State Q{} changed to {}",
+                                                state_index_parsed,
+                                                {
+                                                    if new_state_acception {
+                                                        "accepting"
+                                                    } else {
+                                                        "not accepting"
+                                                    }
+                                                }
+                                            ),
+                                            "Success",
+                                        );
+                                    } else {
+                                        self.show_error_popup("State out of bounds");
+                                        self.state_modifications_string_input.clear();
+                                    }
+                                } else {
+                                    self.show_error_popup("Unable to parse state");
+                                    self.state_modifications_string_input.clear();
+                                }
+                            }
+                        });
                     });
-                    ui.add(
-                        egui::TextEdit::singleline(&mut self.state_modifications_string_input)
-                            .hint_text("eg. ABCD")
-                            .desired_width(ui.available_width()),
-                    );
                 });
-                ui.horizontal_centered(|ui| {
-                    let make_state_starting = egui::Button::new("Starting");
-                    if ui
-                        .add_sized(
-                            [ui.available_width() / 2.0, ui.available_height()],
-                            make_state_starting,
-                        )
-                        .clicked()
-                    {
-                        if let Ok(state_index_parsed) =
-                            self.state_modifications_string_input.parse::<usize>()
-                            && self.machine.set_start_state(state_index_parsed)
-                        {
-                            self.show_popup(
-                                &format!("Stating state is not Q{}", state_index_parsed),
-                                "Success",
-                            );
-                        } else {
-                            self.show_error_popup("Unable to change starting state");
-                        }
-                    }
-                    let make_state_accepting = egui::Button::new("Accepting");
-                    if ui
-                        .add_sized(
-                            [ui.available_width(), ui.available_height()],
-                            make_state_accepting,
-                        )
-                        .clicked()
-                    {}
-                });
+
                 ui.label("")
             });
         // ── Tape Side Panel ─────────────────────────────────────────────────────────
