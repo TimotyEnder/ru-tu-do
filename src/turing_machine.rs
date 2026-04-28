@@ -1,6 +1,6 @@
 use std::collections::{HashSet, VecDeque};
 use std::error::Error;
-static BLANK_CELL_DEFAULT_CHAR: &str = "B";
+static BLANK_CELL_DEFAULT_CHAR: &str = "#";
 pub struct TuringMachine {
     vertices: Vec<TuringVertex>,
     start_state: usize,
@@ -92,6 +92,7 @@ impl TuringMachine {
         if let Some(direction) =
             self.vertices[*current_state].write_and_next_move(tape, current_state)
         {
+            tape.move_tape(direction);
             return true;
         } else {
             return false;
