@@ -2,10 +2,11 @@ mod turing_machine;
 
 use core::num;
 
+use crate::turing_machine::{TuringMachine, TuringTape};
 use eframe::egui;
 use egui::{Vec2, ahash::random_state::set_random_source, response};
-
-use crate::turing_machine::{TuringMachine, TuringTape};
+use egui_graphs::{DefaultEdgeShape, DefaultNodeShape, Graph, add_node};
+use petgraph::{graph::NodeIndex, stable_graph::StableDiGraph};
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -46,9 +47,12 @@ struct RuToDoUI {
     string_to_process: String,
     tape: TuringTape,
     current_state_index: usize,
+    //
+    graph: egui_graphs::Graph,
 }
 impl Default for RuToDoUI {
     fn default() -> Self {
+        let empty_graph = Self::empty_graph();
         return Self {
             machine: TuringMachine::new_default(),
             from_transition_field: String::new(),
@@ -65,12 +69,40 @@ impl Default for RuToDoUI {
             tape: TuringTape::from_string_input(""),
             current_state_index: 0,
             state_modifications_string_input: String::new(),
+            graph: egui_graphs::Graph::from(&empty_graph),
         };
     }
 }
 
 // ── eframe::App impl and UI helper functions ─────────────────────────────────────────────────────────
 impl RuToDoUI {
+    fn empty_graph() -> petgraph::stable_graph::StableDiGraph<(), ()> {
+        return petgraph::stable_graph::StableDiGraph::new();
+    }
+    fn gen_graph(&self) -> petgraph::stable_graph::StableDiGraph<usize, ()> {
+        // First create the petgraph StableDiGraph
+        let mut petgraph_graph = StableDiGraph::new();
+        let mut node_vec = Vec::<NodeIndex>::new();
+
+        // Add nodes
+        for it in 0..self.machine.vertices.len() {
+            node_vec.push(petgraph_graph.add_node(it));
+        }
+
+        // Add edges
+        let mut it = 0;
+        for vertex in &self.machine.vertices {
+            for transition in &vertex.transitions {
+                petgraph_graph.add_edge(
+                    node_vec[it],
+                    node_vec[transition.next_state_index.unwrap()],
+                    (),
+                );
+            }
+            it += 1;
+        }
+        return petgraph_graph;
+    }
     fn error_popup(&mut self, ctx: &egui::Context) {
         if self.error_popus_shown {
             egui::Window::new("Error")
@@ -191,19 +223,20 @@ impl eframe::App for RuToDoUI {
                             });
                         });
                         ui.horizontal_wrapped(|ui| {
-                            ui.set_width(ui.max_rect().width() * 0.18);
+                            ui.set_width(ui.max_rect().width() * 0.40);
+                            let total_width = ui.available_width();
                             ui.horizontal(|ui| {
                                 ui.add(
                                     egui::TextEdit::singleline(&mut self.write_transition_field)
                                         .hint_text("write: eg. A")
-                                        .desired_width(50.0),
+                                        .desired_width(total_width / 2.0),
                                 );
                             });
                             ui.horizontal(|ui| {
                                 ui.label("move:");
                                 egui::ComboBox::from_label("")
                                     .selected_text(&self.transition_move_opt)
-                                    .width(30.0)
+                                    .width(total_width / 2.0)
                                     .show_ui(ui, |ui| {
                                         ui.selectable_value(
                                             &mut self.transition_move_opt,
@@ -412,7 +445,7 @@ impl eframe::App for RuToDoUI {
         // ── Graph Panel ─────────────────────────────────────────────────────────
         egui::CentralPanel::default().show_inside(ui, |ui| {
             ui.vertical_centered(|ui| {
-                ui.heading("Ru-Tu-Do");
+                ui.add(&mut egui_graphs::GraphView::new(&mut self.graph));
             });
         });
     }

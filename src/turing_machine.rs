@@ -2,7 +2,7 @@ use std::collections::{HashSet, VecDeque};
 use std::error::Error;
 static BLANK_CELL_DEFAULT_CHAR: &str = "#";
 pub struct TuringMachine {
-    vertices: Vec<TuringVertex>,
+    pub vertices: Vec<TuringVertex>,
     start_state: usize,
 }
 impl TuringMachine {
@@ -201,10 +201,10 @@ impl<'a> TuringVertex {
 }
 
 struct TuringTransition {
-    accepted_string: String,
-    to_write: String,
-    next_state_index: Option<usize>,
-    move_direction: MovementDirection,
+    pub accepted_string: String,
+    pub to_write: String,
+    pub next_state_index: Option<usize>,
+    pub move_direction: MovementDirection,
 }
 #[derive(PartialEq, Clone)]
 enum MovementDirection {
@@ -212,7 +212,7 @@ enum MovementDirection {
     Right,
 }
 pub struct TuringTape {
-    pub(crate) tape: VecDeque<String>,
+    pub tape: VecDeque<String>,
     reading_head_position: usize,
 }
 impl TuringTape {
