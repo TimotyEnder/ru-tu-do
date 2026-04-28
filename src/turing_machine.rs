@@ -6,6 +6,13 @@ pub struct TuringMachine {
     start_state: usize,
 }
 impl TuringMachine {
+    pub fn set_start_state(&mut self, state: usize) -> bool {
+        if (0..=self.vertices.len()).contains(&state) {
+            self.start_state = state;
+            return true;
+        }
+        return false;
+    }
     pub fn new(vertex_count: usize, list_of_accepting: &[usize], start_state: &usize) -> Self {
         let mut to_ret: TuringMachine = TuringMachine {
             vertices: Vec::<TuringVertex>::new(),

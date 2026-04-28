@@ -32,6 +32,7 @@ struct RuToDoUI {
     write_transition_field: String,
     accept_transition_field: String,
     transition_move_opt: String,
+    state_modifications_string_input: String,
     //
     machine: TuringMachine,
     //
@@ -50,22 +51,20 @@ impl Default for RuToDoUI {
     fn default() -> Self {
         return Self {
             machine: TuringMachine::new_default(),
-
             from_transition_field: String::new(),
             to_transition_field: String::new(),
             write_transition_field: String::new(),
             accept_transition_field: String::new(),
             transition_move_opt: String::from("Left"),
             string_to_process: String::new(),
-
             error_popup_txt: String::new(),
             error_popus_shown: false,
-
             popup_shown: false,
             popup_text: String::new(),
             popup_title: String::new(),
             tape: TuringTape::from_string_input(""),
             current_state_index: 0,
+            state_modifications_string_input: String::new(),
         };
     }
 }
@@ -295,6 +294,47 @@ impl eframe::App for RuToDoUI {
                             self.show_popup("Tape Reset", "Success");
                         }
                     });
+                });
+                ui.separator();
+                ui.vertical(|ui| {
+                    ui.horizontal_centered(|ui| {
+                        ui.label("Make State:");
+                    });
+                    ui.add(
+                        egui::TextEdit::singleline(&mut self.state_modifications_string_input)
+                            .hint_text("eg. ABCD")
+                            .desired_width(ui.available_width()),
+                    );
+                });
+                ui.horizontal_centered(|ui| {
+                    let make_state_starting = egui::Button::new("Starting");
+                    if ui
+                        .add_sized(
+                            [ui.available_width() / 2.0, ui.available_height()],
+                            make_state_starting,
+                        )
+                        .clicked()
+                    {
+                        if let Ok(state_index_parsed) =
+                            self.state_modifications_string_input.parse::<usize>()
+                            && self.machine.set_start_state(state_index_parsed)
+                        {
+                            self.show_popup(
+                                &format!("Stating state is not Q{}", state_index_parsed),
+                                "Success",
+                            );
+                        } else {
+                            self.show_error_popup("Unable to change starting state");
+                        }
+                    }
+                    let make_state_accepting = egui::Button::new("Accepting");
+                    if ui
+                        .add_sized(
+                            [ui.available_width(), ui.available_height()],
+                            make_state_accepting,
+                        )
+                        .clicked()
+                    {}
                 });
                 ui.label("")
             });
