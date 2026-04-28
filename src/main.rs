@@ -5,8 +5,8 @@ use core::num;
 use crate::turing_machine::{TuringMachine, TuringTape};
 use eframe::egui;
 use egui::{Vec2, ahash::random_state::set_random_source, response};
-use egui_graphs::{DefaultEdgeShape, DefaultNodeShape, Graph, add_node};
-use petgraph::{graph::NodeIndex, stable_graph::StableDiGraph};
+use egui_graphs::{DefaultEdgeShape, DefaultNodeShape, FruchtermanReingold, Graph, add_node};
+use petgraph::{Directed, graph::NodeIndex, stable_graph::StableDiGraph};
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -52,7 +52,7 @@ struct RuToDoUI {
 }
 impl Default for RuToDoUI {
     fn default() -> Self {
-        let empty_graph = Self::empty_graph();
+        let empty_graph = Self::default_graph();
         return Self {
             machine: TuringMachine::new_default(),
             from_transition_field: String::new(),
@@ -76,8 +76,10 @@ impl Default for RuToDoUI {
 
 // ── eframe::App impl and UI helper functions ─────────────────────────────────────────────────────────
 impl RuToDoUI {
-    fn empty_graph() -> petgraph::stable_graph::StableDiGraph<(), ()> {
-        return petgraph::stable_graph::StableDiGraph::new();
+    fn default_graph() -> petgraph::stable_graph::StableDiGraph<(), ()> {
+        let mut ret_graph = petgraph::stable_graph::StableDiGraph::new();
+        let a = ret_graph.add_node(());
+        return ret_graph;
     }
     fn gen_graph(&self) -> petgraph::stable_graph::StableDiGraph<usize, ()> {
         // First create the petgraph StableDiGraph
@@ -445,7 +447,16 @@ impl eframe::App for RuToDoUI {
         // ── Graph Panel ─────────────────────────────────────────────────────────
         egui::CentralPanel::default().show_inside(ui, |ui| {
             ui.vertical_centered(|ui| {
-                ui.add(&mut egui_graphs::GraphView::new(&mut self.graph));
+                ui.add(&mut egui_graphs::GraphView::<
+                    (),
+                    (),
+                    Directed,
+                    u32,
+                    DefaultNodeShape,
+                    DefaultEdgeShape,
+                    egui_graphs::FruchtermanReingoldState,
+                    egui_graphs::LayoutForceDirected<FruchtermanReingold>,
+                >::new(&mut self.graph));
             });
         });
     }

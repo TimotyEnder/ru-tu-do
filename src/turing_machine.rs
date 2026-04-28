@@ -131,7 +131,7 @@ impl TuringMachine {
     }
 }
 
-struct TuringVertex {
+pub struct TuringVertex {
     pub transitions: Vec<TuringTransition>,
     pub set_of_accepted_strings_from_vertex: HashSet<String>,
     pub accepting: bool,
@@ -200,14 +200,14 @@ impl<'a> TuringVertex {
     }
 }
 
-struct TuringTransition {
+pub struct TuringTransition {
     pub accepted_string: String,
     pub to_write: String,
     pub next_state_index: Option<usize>,
     pub move_direction: MovementDirection,
 }
 #[derive(PartialEq, Clone)]
-enum MovementDirection {
+pub enum MovementDirection {
     Left,
     Right,
 }
