@@ -165,41 +165,37 @@ impl eframe::App for RuToDoUI {
                     });
                     ui.separator();
                     ui.vertical(|ui| {
-                        ui.horizontal_wrapped(|ui| {
-                            ui.set_width(ui.max_rect().width() * 0.18);
+                        ui.horizontal(|ui| {
+                            ui.set_width(ui.max_rect().width() * 0.40);
+                            let total_width = ui.available_width();
                             ui.horizontal(|ui| {
-                                ui.label("from:");
-
                                 ui.add(
                                     egui::TextEdit::singleline(&mut self.from_transition_field)
-                                        .hint_text("e.g., q0")
-                                        .desired_width(20.0), // Shows when field is empty
+                                        .hint_text("from: e.g., q0")
+                                        .desired_width(total_width / 3.0), // Shows when field is empty
                                 );
                             });
                             ui.horizontal(|ui| {
-                                ui.label("to:");
                                 ui.add(
                                     egui::TextEdit::singleline(&mut self.to_transition_field)
-                                        .hint_text("e.g., q1")
-                                        .desired_width(50.0),
+                                        .hint_text("to: e.g., q1")
+                                        .desired_width(total_width / 3.0),
                                 );
                             });
                             ui.horizontal(|ui| {
-                                ui.label("read:");
                                 ui.add(
                                     egui::TextEdit::singleline(&mut self.accept_transition_field)
-                                        .hint_text("eg. A")
-                                        .desired_width(70.0),
+                                        .hint_text("read: eg. A")
+                                        .desired_width(total_width / 3.0),
                                 );
                             });
                         });
                         ui.horizontal_wrapped(|ui| {
                             ui.set_width(ui.max_rect().width() * 0.18);
                             ui.horizontal(|ui| {
-                                ui.label("write:");
                                 ui.add(
                                     egui::TextEdit::singleline(&mut self.write_transition_field)
-                                        .hint_text("eg. A")
+                                        .hint_text("write: eg. A")
                                         .desired_width(50.0),
                                 );
                             });
