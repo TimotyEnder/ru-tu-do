@@ -51,7 +51,7 @@ struct RuToDoUI {
     tape: TuringTape,
     current_state_index: usize,
     //
-    graph: egui_graphs::Graph,
+    graph: egui_graphs::Graph<usize, String, Directed, u32, DefaultNodeShape, DefaultEdgeShape>,
     graph_updated: bool,
     node_count_in_graph: usize,
     next_node_pos: Vec2,
@@ -61,7 +61,7 @@ struct RuToDoUI {
 }
 impl Default for RuToDoUI {
     fn default() -> Self {
-        let empty_graph = Self::default_graph();
+        let default_graph = Self::default_graph();
         return Self {
             machine: TuringMachine::new_default(),
             from_transition_field: String::new(),
@@ -78,7 +78,7 @@ impl Default for RuToDoUI {
             tape: TuringTape::from_string_input(""),
             current_state_index: 0,
             state_modifications_string_input: String::new(),
-            graph: egui_graphs::Graph::from(&empty_graph),
+            graph: egui_graphs::Graph::from(&default_graph),
             graph_updated: false,
             node_count_in_graph: 0,
             next_node_pos: Vec2 { x: 0.0, y: 0.0 },
@@ -91,7 +91,7 @@ impl Default for RuToDoUI {
 
 // ── eframe::App impl and UI helper functions ─────────────────────────────────────────────────────────
 impl RuToDoUI {
-    fn default_graph() -> petgraph::stable_graph::StableDiGraph<(), ()> {
+    fn default_graph() -> petgraph::stable_graph::StableDiGraph<usize, String> {
         let ret_graph = petgraph::stable_graph::StableDiGraph::new();
         return ret_graph;
     }
@@ -100,9 +100,10 @@ impl RuToDoUI {
             let machine_node_count = self.machine.vertices.len();
             let x = self.next_node_pos[0];
             let y = self.next_node_pos[1];
+            let mut node_index = self.node_count_in_graph;
             while self.node_count_in_graph < machine_node_count {
                 // Add node with just payload
-                let ni = self.graph.add_node(());
+                let ni = self.graph.add_node(node_index);
 
                 // Then set its position via the node mut reference
                 if let Some(node) = self.graph.node_mut(ni) {
@@ -117,6 +118,7 @@ impl RuToDoUI {
                 }
                 self.current_nodes_in_row += 1;
                 self.node_count_in_graph += 1;
+                node_index += 1;
             }
 
             // Rebuild edges
@@ -130,7 +132,7 @@ impl RuToDoUI {
                     if let Some(next_idx) = transition.next_state_index {
                         let src = petgraph::graph::NodeIndex::new(i);
                         let dst = petgraph::graph::NodeIndex::new(next_idx);
-                        self.graph.add_edge(src, dst, ());
+                        self.graph.add_edge(src, dst, transition.to_edge_label());
                     }
                 }
             }
@@ -493,8 +495,8 @@ impl eframe::App for RuToDoUI {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add(&mut egui_graphs::GraphView::<
-                    (),
-                    (),
+                    usize,
+                    String,
                     Directed,
                     u32,
                     DefaultNodeShape,
