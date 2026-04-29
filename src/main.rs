@@ -1,20 +1,12 @@
 mod turing_machine;
-use core::num;
-use rand::{Rng, RngExt};
 
 use crate::turing_machine::{TuringMachine, TuringTape};
 use eframe::egui;
-use egui::{Vec2, ahash::random_state::set_random_source, response};
+use egui::Vec2;
 use egui_graphs::{
-    DefaultEdgeShape, DefaultNodeShape, FruchtermanReingold, Graph, LayoutHierarchical,
-    LayoutRandom, LayoutStateHierarchical, LayoutStateRandom, add_node,
+    DefaultEdgeShape, DefaultNodeShape, LayoutHierarchical, LayoutStateHierarchical,
 };
-use petgraph::{
-    Directed,
-    data::Element,
-    graph::{self, NodeIndex},
-    stable_graph::StableDiGraph,
-};
+use petgraph::Directed;
 // or for no automatic layout:
 
 type L = LayoutHierarchical;
@@ -105,7 +97,6 @@ impl RuToDoUI {
     }
     fn update_graph(&mut self) {
         if !self.graph_updated {
-            let mut rng = rand::rng();
             let machine_node_count = self.machine.vertices.len();
             let x = self.next_node_pos[0];
             let y = self.next_node_pos[1];
