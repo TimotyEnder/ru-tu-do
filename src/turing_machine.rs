@@ -13,6 +13,9 @@ impl TuringMachine {
         }
         return false;
     }
+    pub fn get_start_state(&self) -> usize {
+        return self.start_state;
+    }
     pub fn toggle_state_acception(&mut self, state_index: usize) -> Result<bool, &'static str> {
         if (0..=self.vertices.len()).contains(&state_index) {
             if self.vertices[state_index].accepting {

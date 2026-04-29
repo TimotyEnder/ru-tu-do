@@ -5,9 +5,17 @@ use core::num;
 use crate::turing_machine::{TuringMachine, TuringTape};
 use eframe::egui;
 use egui::{Vec2, ahash::random_state::set_random_source, response};
-use egui_graphs::{DefaultEdgeShape, DefaultNodeShape, FruchtermanReingold, Graph, add_node};
-use petgraph::{Directed, graph::NodeIndex, stable_graph::StableDiGraph};
-
+use egui_graphs::{
+    DefaultEdgeShape, DefaultNodeShape, FruchtermanReingold, Graph, LayoutHierarchical,
+    LayoutRandom, LayoutStateHierarchical, LayoutStateRandom, add_node,
+};
+use petgraph::{
+    Directed,
+    graph::{self, NodeIndex},
+    stable_graph::StableDiGraph,
+};
+type L = LayoutHierarchical;
+type S = LayoutStateHierarchical;
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -49,6 +57,7 @@ struct RuToDoUI {
     current_state_index: usize,
     //
     graph: egui_graphs::Graph,
+    graph_updated: bool,
 }
 impl Default for RuToDoUI {
     fn default() -> Self {
@@ -70,6 +79,7 @@ impl Default for RuToDoUI {
             current_state_index: 0,
             state_modifications_string_input: String::new(),
             graph: egui_graphs::Graph::from(&empty_graph),
+            graph_updated: false,
         };
     }
 }
@@ -81,14 +91,24 @@ impl RuToDoUI {
         let a = ret_graph.add_node(());
         return ret_graph;
     }
-    fn gen_graph(&self) -> petgraph::stable_graph::StableDiGraph<usize, ()> {
+    fn update_graph(&mut self) {
+        if !self.graph_updated {
+            let pet_graph = self.gen_graph();
+            self.graph = egui_graphs::Graph::from(&pet_graph);
+            self.graph_updated = true;
+        }
+    }
+    fn trigger_graph_update_next_frame(&mut self) {
+        self.graph_updated = false;
+    }
+    fn gen_graph(&self) -> petgraph::stable_graph::StableDiGraph<(), ()> {
         // First create the petgraph StableDiGraph
         let mut petgraph_graph = StableDiGraph::new();
         let mut node_vec = Vec::<NodeIndex>::new();
 
         // Add nodes
         for it in 0..self.machine.vertices.len() {
-            node_vec.push(petgraph_graph.add_node(it));
+            node_vec.push(petgraph_graph.add_node(()));
         }
 
         // Add edges
@@ -163,6 +183,8 @@ impl eframe::App for RuToDoUI {
         let base_font_size = (screen_width.min(screen_height) * 0.01).clamp(10.0, 32.0);
 
         let mut style = (*ui.ctx().global_style()).clone();
+        //updating graph when necessary
+        self.update_graph();
         style
             .text_styles
             .get_mut(&egui::TextStyle::Body)
@@ -195,6 +217,7 @@ impl eframe::App for RuToDoUI {
                         if ui.add(vertex_create_button).clicked() {
                             self.machine.add_vertex_button_handler();
                             self.show_popup("Vertex Created", "Success");
+                            self.trigger_graph_update_next_frame();
                         }
                     });
                     ui.separator();
@@ -275,6 +298,7 @@ impl eframe::App for RuToDoUI {
                                         .is_ok()
                                 {
                                     self.show_popup("Transition created", "Success");
+                                    self.trigger_graph_update_next_frame();
                                 } else {
                                     self.show_error_popup("Error creating transition!");
                                     self.to_transition_field.clear();
@@ -315,6 +339,7 @@ impl eframe::App for RuToDoUI {
                         {
                             self.machine
                                 .step(&mut self.tape, &mut self.current_state_index);
+                            self.trigger_graph_update_next_frame();
                         }
                         ui.end_row();
                         let reset_button = egui::Button::new("Reset Tape");
@@ -323,6 +348,8 @@ impl eframe::App for RuToDoUI {
                             .clicked()
                         {
                             self.tape = TuringTape::from_string_input("");
+                            self.current_state_index = self.machine.get_start_state();
+                            self.trigger_graph_update_next_frame();
                             self.show_popup("Tape Reset", "Success");
                         }
                     });
@@ -348,9 +375,10 @@ impl eframe::App for RuToDoUI {
                                     && self.machine.set_start_state(state_index_parsed)
                                 {
                                     self.show_popup(
-                                        &format!("Stating state is not Q{}", state_index_parsed),
+                                        &format!("Stating state is now Q{}", state_index_parsed),
                                         "Success",
                                     );
+                                    self.trigger_graph_update_next_frame();
                                 } else {
                                     self.show_error_popup("Unable to change starting state");
                                     self.state_modifications_string_input.clear();
@@ -384,6 +412,7 @@ impl eframe::App for RuToDoUI {
                                             ),
                                             "Success",
                                         );
+                                        self.trigger_graph_update_next_frame();
                                     } else {
                                         self.show_error_popup("State out of bounds");
                                         self.state_modifications_string_input.clear();
@@ -454,8 +483,8 @@ impl eframe::App for RuToDoUI {
                     u32,
                     DefaultNodeShape,
                     DefaultEdgeShape,
-                    egui_graphs::FruchtermanReingoldState,
-                    egui_graphs::LayoutForceDirected<FruchtermanReingold>,
+                    S,
+                    L,
                 >::new(&mut self.graph));
             });
         });
