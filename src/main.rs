@@ -1,6 +1,6 @@
 mod turing_machine;
-
 use core::num;
+use rand::{Rng, RngExt};
 
 use crate::turing_machine::{TuringMachine, TuringTape};
 use eframe::egui;
@@ -11,9 +11,12 @@ use egui_graphs::{
 };
 use petgraph::{
     Directed,
+    data::Element,
     graph::{self, NodeIndex},
     stable_graph::StableDiGraph,
 };
+// or for no automatic layout:
+
 type L = LayoutHierarchical;
 type S = LayoutStateHierarchical;
 fn main() -> eframe::Result {
@@ -58,6 +61,11 @@ struct RuToDoUI {
     //
     graph: egui_graphs::Graph,
     graph_updated: bool,
+    node_count_in_graph: usize,
+    next_node_pos: Vec2,
+    first_node_or_row_pos_x: f32,
+    nodes_for_next_row: usize,
+    current_nodes_in_row: usize,
 }
 impl Default for RuToDoUI {
     fn default() -> Self {
@@ -80,6 +88,11 @@ impl Default for RuToDoUI {
             state_modifications_string_input: String::new(),
             graph: egui_graphs::Graph::from(&empty_graph),
             graph_updated: false,
+            node_count_in_graph: 0,
+            next_node_pos: Vec2 { x: 0.0, y: 0.0 },
+            first_node_or_row_pos_x: 0.0,
+            nodes_for_next_row: 5,
+            current_nodes_in_row: 1,
         };
     }
 }
@@ -87,43 +100,55 @@ impl Default for RuToDoUI {
 // ── eframe::App impl and UI helper functions ─────────────────────────────────────────────────────────
 impl RuToDoUI {
     fn default_graph() -> petgraph::stable_graph::StableDiGraph<(), ()> {
-        let mut ret_graph = petgraph::stable_graph::StableDiGraph::new();
-        let a = ret_graph.add_node(());
+        let ret_graph = petgraph::stable_graph::StableDiGraph::new();
         return ret_graph;
     }
     fn update_graph(&mut self) {
         if !self.graph_updated {
-            let pet_graph = self.gen_graph();
-            self.graph = egui_graphs::Graph::from(&pet_graph);
+            let mut rng = rand::rng();
+            let machine_node_count = self.machine.vertices.len();
+            let x = self.next_node_pos[0];
+            let y = self.next_node_pos[1];
+            while self.node_count_in_graph < machine_node_count {
+                // Add node with just payload
+                let ni = self.graph.add_node(());
+
+                // Then set its position via the node mut reference
+                if let Some(node) = self.graph.node_mut(ni) {
+                    node.set_location(egui::Pos2::new(x, y));
+                }
+                self.next_node_pos = Vec2 { x, y };
+                self.next_node_pos[0] += 50.0;
+                if self.nodes_for_next_row <= self.current_nodes_in_row {
+                    self.next_node_pos[1] += 50.0;
+                    self.next_node_pos[0] = self.first_node_or_row_pos_x;
+                    self.current_nodes_in_row = 0;
+                }
+                self.current_nodes_in_row += 1;
+                self.node_count_in_graph += 1;
+            }
+
+            // Rebuild edges
+            let edge_indices: Vec<_> = self.graph.g().edge_indices().collect();
+            for e in edge_indices {
+                self.graph.g_mut().remove_edge(e);
+            }
+
+            for (i, vertex) in self.machine.vertices.iter().enumerate() {
+                for transition in &vertex.transitions {
+                    if let Some(next_idx) = transition.next_state_index {
+                        let src = petgraph::graph::NodeIndex::new(i);
+                        let dst = petgraph::graph::NodeIndex::new(next_idx);
+                        self.graph.add_edge(src, dst, ());
+                    }
+                }
+            }
+
             self.graph_updated = true;
         }
     }
     fn trigger_graph_update_next_frame(&mut self) {
         self.graph_updated = false;
-    }
-    fn gen_graph(&self) -> petgraph::stable_graph::StableDiGraph<(), ()> {
-        // First create the petgraph StableDiGraph
-        let mut petgraph_graph = StableDiGraph::new();
-        let mut node_vec = Vec::<NodeIndex>::new();
-
-        // Add nodes
-        for it in 0..self.machine.vertices.len() {
-            node_vec.push(petgraph_graph.add_node(()));
-        }
-
-        // Add edges
-        let mut it = 0;
-        for vertex in &self.machine.vertices {
-            for transition in &vertex.transitions {
-                petgraph_graph.add_edge(
-                    node_vec[it],
-                    node_vec[transition.next_state_index.unwrap()],
-                    (),
-                );
-            }
-            it += 1;
-        }
-        return petgraph_graph;
     }
     fn error_popup(&mut self, ctx: &egui::Context) {
         if self.error_popus_shown {
@@ -447,7 +472,7 @@ impl eframe::App for RuToDoUI {
                                 let available_width = ui.available_width();
 
                                 // Create a button-like cell that fills the space
-                                let response = ui.add_sized(
+                                ui.add_sized(
                                     [available_width, cell_height],
                                     egui::Button::new(format!("{} {}", tape_cell, {
                                         if it == self.tape.current_cell_index() {
