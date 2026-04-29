@@ -1,5 +1,6 @@
 use std::collections::{HashSet, VecDeque};
 use std::error::Error;
+use std::fmt::format;
 static BLANK_CELL_DEFAULT_CHAR: &str = "#";
 pub struct TuringMachine {
     pub vertices: Vec<TuringVertex>,
@@ -208,6 +209,19 @@ pub struct TuringTransition {
     pub to_write: String,
     pub next_state_index: Option<usize>,
     pub move_direction: MovementDirection,
+}
+impl TuringTransition {
+    pub fn to_edge_label(&self) -> String {
+        return format!(
+            "{}/{}{}",
+            self.accepted_string,
+            self.to_write,
+            match self.move_direction {
+                MovementDirection::Left => "<-",
+                MovementDirection::Right => "->",
+            }
+        );
+    }
 }
 #[derive(PartialEq, Clone)]
 pub enum MovementDirection {
