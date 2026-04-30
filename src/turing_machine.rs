@@ -1,6 +1,4 @@
 use std::collections::{HashSet, VecDeque};
-use std::error::Error;
-use std::fmt::format;
 static BLANK_CELL_DEFAULT_CHAR: &str = "#";
 pub struct TuringMachine {
     pub vertices: Vec<TuringVertex>,

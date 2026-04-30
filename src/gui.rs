@@ -1,6 +1,11 @@
 // ── App state ────────────────────────────────────────────────────────────────
 
-use crate::turing_machine::{TuringMachine, TuringTape};
+use std::fmt::format;
+
+use crate::{
+    graph_elements::TuringStateNode,
+    turing_machine::{TuringMachine, TuringTape},
+};
 use eframe::egui;
 use egui::Vec2;
 use egui_graphs::{
@@ -9,7 +14,7 @@ use egui_graphs::{
 
 type L = LayoutHierarchical;
 type S = LayoutStateHierarchical;
-use petgraph::Directed;
+use petgraph::{Directed, graph::NodeIndex};
 pub struct RuToDoUI {
     from_transition_field: String,
     to_transition_field: String,
@@ -31,7 +36,7 @@ pub struct RuToDoUI {
     tape: TuringTape,
     current_state_index: usize,
     //
-    graph: egui_graphs::Graph<usize, String, Directed, u32, DefaultNodeShape, DefaultEdgeShape>,
+    graph: egui_graphs::Graph<usize, String, Directed, u32, TuringStateNode, DefaultEdgeShape>,
     graph_updated: bool,
     node_count_in_graph: usize,
     next_node_pos: Vec2,
@@ -84,7 +89,6 @@ impl RuToDoUI {
             while self.node_count_in_graph < machine_node_count {
                 // Add node with just payload
                 let ni = self.graph.add_node(node_index);
-
                 // Then set its position via the node mut reference
                 if let Some(node) = self.graph.node_mut(ni) {
                     node.set_location(egui::Pos2::new(x, y));
@@ -100,7 +104,28 @@ impl RuToDoUI {
                 self.node_count_in_graph += 1;
                 node_index += 1;
             }
-
+            for i in 0..=self.node_count_in_graph {
+                if let Some(node) = self.graph.node_mut(NodeIndex::new(i)) {
+                    node.set_selected(self.machine.vertices[i].accepting);
+                    if self.machine.get_start_state() == i {
+                        node.set_label(format!("->Q{}", {
+                            if self.current_state_index == i {
+                                format!("[{}]", i)
+                            } else {
+                                format!("{}", i)
+                            }
+                        }));
+                    } else {
+                        node.set_label(format!("Q{}", {
+                            if self.current_state_index == i {
+                                format!("[{}]", i)
+                            } else {
+                                format!("{}", i)
+                            }
+                        }));
+                    }
+                }
+            }
             // Rebuild edges
             let edge_indices: Vec<_> = self.graph.g().edge_indices().collect();
             for e in edge_indices {
@@ -479,7 +504,7 @@ impl eframe::App for RuToDoUI {
                     String,
                     Directed,
                     u32,
-                    DefaultNodeShape,
+                    TuringStateNode,
                     DefaultEdgeShape,
                     S,
                     L,
