@@ -9,7 +9,8 @@ use crate::{
 use eframe::{egui, wgpu::Color};
 use egui::{Color32, Vec2};
 use egui_graphs::{
-    DefaultEdgeShape, DefaultNodeShape, LayoutHierarchical, LayoutStateHierarchical, SettingsStyle,
+    DefaultEdgeShape, DefaultNodeShape, LayoutHierarchical, LayoutStateHierarchical,
+    SettingsNavigation, SettingsStyle,
 };
 
 type L = LayoutHierarchical;
@@ -518,6 +519,12 @@ impl eframe::App for RuToDoUI {
                         S,
                         L,
                     >::new(&mut self.graph)
+                    .with_navigations(
+                        &(SettingsNavigation::new())
+                            .with_fit_to_screen_enabled(false)
+                            .with_zoom_and_pan_enabled(true)
+                            .with_zoom_speed(0.02),
+                    )
                     .with_styles(
                         &(SettingsStyle::new())
                             .with_labels_always(true)
