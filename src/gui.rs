@@ -6,15 +6,18 @@ use crate::{
     graph_elements::TuringStateNode,
     turing_machine::{TuringMachine, TuringTape},
 };
-use eframe::egui;
-use egui::Vec2;
+use eframe::{egui, wgpu::Color};
+use egui::{Color32, Vec2};
 use egui_graphs::{
-    DefaultEdgeShape, DefaultNodeShape, LayoutHierarchical, LayoutStateHierarchical,
+    DefaultEdgeShape, DefaultNodeShape, LayoutHierarchical, LayoutStateHierarchical, SettingsStyle,
 };
 
 type L = LayoutHierarchical;
 type S = LayoutStateHierarchical;
-use petgraph::{Directed, graph::NodeIndex};
+use petgraph::{
+    Directed,
+    graph::{self, NodeIndex},
+};
 pub struct RuToDoUI {
     from_transition_field: String,
     to_transition_field: String,
@@ -108,6 +111,7 @@ impl RuToDoUI {
                 if let Some(node) = self.graph.node_mut(NodeIndex::new(i)) {
                     node.set_selected(self.machine.vertices[i].accepting);
                     if self.machine.get_start_state() == i {
+                        node.set_color(Color32::from_hex("#7C87EE").unwrap_or(Color32::PURPLE));
                         node.set_label(format!("->Q{}", {
                             if self.current_state_index == i {
                                 format!("[{}]", i)
@@ -116,6 +120,7 @@ impl RuToDoUI {
                             }
                         }));
                     } else {
+                        node.set_color(Color32::from_rgb(94, 94, 94));
                         node.set_label(format!("Q{}", {
                             if self.current_state_index == i {
                                 format!("[{}]", i)
@@ -137,7 +142,10 @@ impl RuToDoUI {
                     if let Some(next_idx) = transition.next_state_index {
                         let src = petgraph::graph::NodeIndex::new(i);
                         let dst = petgraph::graph::NodeIndex::new(next_idx);
-                        self.graph.add_edge(src, dst, transition.to_edge_label());
+                        let edge_index = self.graph.add_edge(src, dst, transition.to_edge_label());
+                        if let Some(edge) = self.graph.edge_mut(edge_index) {
+                            edge.set_label(transition.to_edge_label());
+                        }
                     }
                 }
             }
@@ -499,16 +507,30 @@ impl eframe::App for RuToDoUI {
         // ── Graph Panel ─────────────────────────────────────────────────────────
         egui::CentralPanel::default().show_inside(ui, |ui| {
             ui.vertical_centered(|ui| {
-                ui.add(&mut egui_graphs::GraphView::<
-                    usize,
-                    String,
-                    Directed,
-                    u32,
-                    TuringStateNode,
-                    DefaultEdgeShape,
-                    S,
-                    L,
-                >::new(&mut self.graph));
+                ui.add(
+                    &mut egui_graphs::GraphView::<
+                        usize,
+                        String,
+                        Directed,
+                        u32,
+                        TuringStateNode,
+                        DefaultEdgeShape,
+                        S,
+                        L,
+                    >::new(&mut self.graph)
+                    .with_styles(
+                        &(SettingsStyle::new())
+                            .with_labels_always(true)
+                            .with_edge_stroke_hook(
+                                |selected, order, mut current_stroke, egui_style| {
+                                    current_stroke.width = 0.5;
+                                    current_stroke.color = Color32::WHITE;
+                                    egui_style.label_style(egui::widget_style::WidgetState::Active);
+                                    return current_stroke;
+                                },
+                            ),
+                    ),
+                )
             });
         });
     }

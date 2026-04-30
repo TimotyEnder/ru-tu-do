@@ -1,6 +1,5 @@
-use eframe::wgpu::Color;
 use egui::{
-    Align2, Color32, FontFamily, FontId, Pos2, Shape, Stroke, Vec2,
+    Color32, FontFamily, FontId, Pos2, Shape, Stroke, Vec2,
     epaint::{CircleShape, TextShape},
 };
 use egui_graphs::{DisplayNode, DrawContext, NodeProps};
@@ -13,7 +12,8 @@ pub struct TuringStateNode {
     pub selected: bool,
     pub dragged: bool,
     pub hovered: bool,
-    pub color: Color32,
+    pub inner_color: Color32,
+    pub outer_color: Color32,
 
     pub label_text: String,
 
@@ -27,7 +27,8 @@ impl From<NodeProps<usize>> for TuringStateNode {
             selected: value.selected,
             dragged: value.dragged,
             hovered: value.hovered,
-            color: Color32::GRAY,
+            inner_color: Color32::GRAY,
+            outer_color: value.color().unwrap_or(Color32::GRAY),
             label_text: value.label.to_string(),
             radius: 5.0,
         };
@@ -42,14 +43,23 @@ impl DisplayNode<usize, String, Directed, u32> for TuringStateNode {
         let mut res: Vec<Shape> = Vec::with_capacity(2);
         let circle_center = ctx.meta.canvas_to_screen_pos(self.pos);
         let circle_radius = ctx.meta.canvas_to_screen_size(self.radius);
-        let color = self.color;
+        let color = self.inner_color;
         let stroke = Stroke::new(1.5, Color32::WHITE);
         let galley = self.label_galley(ctx, self.radius, Color32::WHITE);
         res.push(
             CircleShape {
                 center: circle_center,
                 radius: circle_radius,
-                fill: color,
+                fill: self.outer_color,
+                stroke,
+            }
+            .into(),
+        );
+        res.push(
+            CircleShape {
+                center: circle_center,
+                radius: circle_radius * 0.8,
+                fill: self.inner_color,
                 stroke,
             }
             .into(),
@@ -69,9 +79,10 @@ impl DisplayNode<usize, String, Directed, u32> for TuringStateNode {
         self.dragged = state.dragged;
         self.hovered = state.hovered;
         self.label_text = state.label.to_string();
-        self.color = match self.selected {
-            true => Color32::GREEN,
-            false => Color32::GRAY,
+        self.outer_color = state.color().unwrap_or(Color32::GRAY);
+        self.inner_color = match self.selected {
+            true => Color32::from_hex("#EEAA7C").unwrap_or(Color32::PURPLE),
+            false => Color32::from_rgb(33, 33, 33),
         };
     }
 
@@ -114,4 +125,3 @@ impl TuringStateNode {
         TextShape::new(label_pos, galley, color).into()
     }
 }
-pub struct TuringTransitionEdge;
