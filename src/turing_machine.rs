@@ -3,6 +3,7 @@ static BLANK_CELL_DEFAULT_CHAR: &str = "#";
 pub struct TuringMachine {
     pub vertices: Vec<TuringVertex>,
     start_state: usize,
+    node_name_counter: usize,
 }
 impl TuringMachine {
     pub fn set_start_state(&mut self, state: usize) -> bool {
@@ -11,6 +12,29 @@ impl TuringMachine {
             return true;
         }
         return false;
+    }
+    pub fn delete_state_with_index(&mut self, index: usize) -> bool {
+        //shift all vetices above the index down by one
+        //delete all transition to that state on the way.
+        if !(0..=self.vertices.len() - 1).contains(&index) {
+            return false;
+        }
+        let mut it: usize = 0;
+        for vertex in &mut self.vertices {
+            if (it != index) {
+                for transition in &mut vertex.transitions {
+                    if transition.next_state_index == Some(index) {
+                        transition.next_state_index = None;
+                    } else if let Some(value) = transition.next_state_index {
+                        if (value > index) {
+                            transition.next_state_index = Some(value - 1);
+                        }
+                    }
+                }
+            }
+        }
+        self.vertices.remove(index);
+        return true;
     }
     pub fn get_start_state(&self) -> usize {
         return self.start_state;
@@ -32,13 +56,16 @@ impl TuringMachine {
         let mut to_ret: TuringMachine = TuringMachine {
             vertices: Vec::<TuringVertex>::new(),
             start_state: *start_state,
+            node_name_counter: 0,
         };
         for i in 0..vertex_count {
             to_ret.add_vertex(TuringVertex {
                 transitions: Vec::<TuringTransition>::new(),
                 set_of_accepted_strings_from_vertex: HashSet::<String>::new(),
                 accepting: list_of_accepting.contains(&i),
+                vertex_name: to_ret.node_name_counter.to_string(),
             });
+            to_ret.node_name_counter += 1;
         }
         return to_ret;
     }
@@ -46,11 +73,13 @@ impl TuringMachine {
         let mut to_ret = TuringMachine {
             vertices: Vec::<TuringVertex>::new(),
             start_state: 0,
+            node_name_counter: 1,
         };
         to_ret.add_vertex(TuringVertex {
             transitions: Vec::<TuringTransition>::new(),
             set_of_accepted_strings_from_vertex: HashSet::<String>::new(),
             accepting: false,
+            vertex_name: String::from("0"),
         });
         return to_ret;
     }
@@ -89,7 +118,9 @@ impl TuringMachine {
             transitions: Vec::<TuringTransition>::new(),
             set_of_accepted_strings_from_vertex: HashSet::<String>::new(),
             accepting: false,
+            vertex_name: self.node_name_counter.to_string(),
         };
+        self.node_name_counter += 1;
         self.vertices.push(vertex);
     }
     pub fn process_string_input(&self, input: &str) -> (VecDeque<String>, bool, usize) {
@@ -137,6 +168,7 @@ pub struct TuringVertex {
     pub transitions: Vec<TuringTransition>,
     pub set_of_accepted_strings_from_vertex: HashSet<String>,
     pub accepting: bool,
+    pub vertex_name: String,
 }
 impl<'a> TuringVertex {
     fn add_transition(

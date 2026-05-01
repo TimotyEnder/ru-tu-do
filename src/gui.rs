@@ -1,17 +1,16 @@
 // ── App state ────────────────────────────────────────────────────────────────
 
-use std::fmt::format;
-
 use crate::{
     graph_elements::TuringStateNode,
     turing_machine::{TuringMachine, TuringTape},
 };
-use eframe::{egui, wgpu::Color};
+use eframe::egui;
 use egui::{Color32, Vec2};
 use egui_graphs::{
-    DefaultEdgeShape, DefaultNodeShape, LayoutHierarchical, LayoutStateHierarchical,
-    SettingsNavigation, SettingsStyle,
+    DefaultEdgeShape, LayoutHierarchical, LayoutStateHierarchical, SettingsNavigation,
+    SettingsStyle,
 };
+use rand::{self, RngExt};
 
 type L = LayoutHierarchical;
 type S = LayoutStateHierarchical;
@@ -43,7 +42,7 @@ pub struct RuToDoUI {
     graph: egui_graphs::Graph<usize, String, Directed, u32, TuringStateNode, DefaultEdgeShape>,
     graph_updated: bool,
     node_count_in_graph: usize,
-    next_node_pos: Vec2,
+    last_node_pos: Vec2,
     first_node_or_row_pos_x: f32,
     nodes_for_next_row: usize,
     current_nodes_in_row: usize,
@@ -70,9 +69,9 @@ impl Default for RuToDoUI {
             graph: egui_graphs::Graph::from(&default_graph),
             graph_updated: false,
             node_count_in_graph: 0,
-            next_node_pos: Vec2 { x: 0.0, y: 0.0 },
+            last_node_pos: Vec2 { x: 0.0, y: 0.0 },
             first_node_or_row_pos_x: 0.0,
-            nodes_for_next_row: 5,
+            nodes_for_next_row: 2,
             current_nodes_in_row: 1,
         };
     }
@@ -85,10 +84,11 @@ impl RuToDoUI {
         return ret_graph;
     }
     fn update_graph(&mut self) {
+        let mut rand = rand::rng();
         if !self.graph_updated {
             let machine_node_count = self.machine.vertices.len();
-            let x = self.next_node_pos[0];
-            let y = self.next_node_pos[1];
+            let x: f32 = self.last_node_pos[0];
+            let y: f32 = self.last_node_pos[1];
             let mut node_index = self.node_count_in_graph;
             while self.node_count_in_graph < machine_node_count {
                 // Add node with just payload
@@ -97,16 +97,16 @@ impl RuToDoUI {
                 if let Some(node) = self.graph.node_mut(ni) {
                     node.set_location(egui::Pos2::new(x, y));
                 }
-                self.next_node_pos = Vec2 { x, y };
-                self.next_node_pos[0] += 50.0;
-                if self.nodes_for_next_row <= self.current_nodes_in_row {
-                    self.next_node_pos[1] += 50.0;
-                    self.next_node_pos[0] = self.first_node_or_row_pos_x;
-                    self.current_nodes_in_row = 0;
-                }
-                self.current_nodes_in_row += 1;
+                self.last_node_pos = Vec2 { x, y };
+                self.last_node_pos[0] += rand.random_range(-10.0..=10.0);
+                self.last_node_pos[1] += rand.random_range(-10.0..=10.0);
                 self.node_count_in_graph += 1;
                 node_index += 1;
+            }
+            while self.node_count_in_graph > machine_node_count {
+                self.graph
+                    .remove_node(NodeIndex::new(self.node_count_in_graph - 1));
+                self.node_count_in_graph -= 1;
             }
             for i in 0..=self.node_count_in_graph {
                 if let Some(node) = self.graph.node_mut(NodeIndex::new(i)) {
@@ -115,18 +115,18 @@ impl RuToDoUI {
                         node.set_color(Color32::from_hex("#7C87EE").unwrap_or(Color32::PURPLE));
                         node.set_label(format!("->Q{}", {
                             if self.current_state_index == i {
-                                format!("[{}]", i)
+                                format!("[{}]", self.machine.vertices[i].vertex_name)
                             } else {
-                                format!("{}", i)
+                                format!("{}", self.machine.vertices[i].vertex_name)
                             }
                         }));
                     } else {
                         node.set_color(Color32::from_rgb(94, 94, 94));
                         node.set_label(format!("Q{}", {
                             if self.current_state_index == i {
-                                format!("[{}]", i)
+                                format!("[{}]", self.machine.vertices[i].vertex_name)
                             } else {
-                                format!("{}", i)
+                                format!("{}", self.machine.vertices[i].vertex_name)
                             }
                         }));
                     }
@@ -397,7 +397,7 @@ impl eframe::App for RuToDoUI {
                             let make_state_starting = egui::Button::new("Starting");
                             if ui
                                 .add_sized(
-                                    [ui.available_width() / 2.0, ui.available_height()],
+                                    [ui.available_width() / 3.0, ui.available_height()],
                                     make_state_starting,
                                 )
                                 .clicked()
@@ -419,7 +419,7 @@ impl eframe::App for RuToDoUI {
                             let make_state_accepting = egui::Button::new("Toggle/Accepting");
                             if ui
                                 .add_sized(
-                                    [ui.available_width(), ui.available_height()],
+                                    [ui.available_width() / 2.0, ui.available_height()],
                                     make_state_accepting,
                                 )
                                 .clicked()
@@ -454,6 +454,33 @@ impl eframe::App for RuToDoUI {
                                     self.state_modifications_string_input.clear();
                                 }
                             }
+                            let make_state_not_exist = egui::Button::new("Not Exist");
+                            if ui
+                                .add_sized(
+                                    [ui.available_width(), ui.available_height()],
+                                    make_state_not_exist,
+                                )
+                                .clicked()
+                            {
+                                if let Ok(state_index_parsed) =
+                                    self.state_modifications_string_input.parse::<usize>()
+                                {
+                                    if self.machine.delete_state_with_index(state_index_parsed) {
+                                        self.show_popup(
+                                            &format!(
+                                                "State Q{} has been removed",
+                                                state_index_parsed
+                                            ),
+                                            "Success",
+                                        );
+                                        self.trigger_graph_update_next_frame();
+                                    } else {
+                                        self.show_error_popup("State indicated is out of bounds");
+                                    }
+                                } else {
+                                    self.show_error_popup("Unable to parse state ");
+                                }
+                            }
                         });
                     });
                 });
@@ -462,7 +489,7 @@ impl eframe::App for RuToDoUI {
             });
         // ── Tape Side Panel ─────────────────────────────────────────────────────────
         egui::Panel::left("tape_panel")
-            .resizable(false)
+            .resizable(true)
             .min_size(ui.max_rect().width() * 0.2) // Set a sensible minimum width
             .show_inside(ui, |ui| {
                 let total_height = ui.available_height();
