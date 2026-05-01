@@ -5,7 +5,7 @@ use crate::{
     turing_machine::{TuringMachine, TuringTape},
 };
 use eframe::egui;
-use egui::{Color32, Vec2};
+use egui::{Color32, Frame, Vec2};
 use egui_graphs::{
     DefaultEdgeShape, LayoutHierarchical, LayoutStateHierarchical, SettingsNavigation,
     SettingsStyle,
@@ -113,22 +113,10 @@ impl RuToDoUI {
                     node.set_selected(self.machine.vertices[i].accepting);
                     if self.machine.get_start_state() == i {
                         node.set_color(Color32::from_hex("#7C87EE").unwrap_or(Color32::PURPLE));
-                        node.set_label(format!("->Q{}", {
-                            if self.current_state_index == i {
-                                format!("[{}]", self.machine.vertices[i].vertex_name)
-                            } else {
-                                format!("{}", self.machine.vertices[i].vertex_name)
-                            }
-                        }));
+                        node.set_label(format!("->Q{}", self.machine.vertices[i].vertex_name));
                     } else {
                         node.set_color(Color32::from_rgb(94, 94, 94));
-                        node.set_label(format!("Q{}", {
-                            if self.current_state_index == i {
-                                format!("[{}]", self.machine.vertices[i].vertex_name)
-                            } else {
-                                format!("{}", self.machine.vertices[i].vertex_name)
-                            }
-                        }));
+                        node.set_label(format!("Q{}", self.machine.vertices[i].vertex_name));
                     }
                 }
             }
@@ -533,39 +521,42 @@ impl eframe::App for RuToDoUI {
                 });
             });
         // ── Graph Panel ─────────────────────────────────────────────────────────
-        egui::CentralPanel::default().show_inside(ui, |ui| {
-            ui.vertical_centered(|ui| {
-                ui.add(
-                    &mut egui_graphs::GraphView::<
-                        usize,
-                        String,
-                        Directed,
-                        u32,
-                        TuringStateNode,
-                        DefaultEdgeShape,
-                        S,
-                        L,
-                    >::new(&mut self.graph)
-                    .with_navigations(
-                        &(SettingsNavigation::new())
-                            .with_fit_to_screen_enabled(false)
-                            .with_zoom_and_pan_enabled(true)
-                            .with_zoom_speed(0.02),
+        egui::CentralPanel::default()
+            .frame(Frame::new().fill(Color32::from_rgb(20, 20, 20)))
+            .show_inside(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add(
+                        &mut egui_graphs::GraphView::<
+                            usize,
+                            String,
+                            Directed,
+                            u32,
+                            TuringStateNode,
+                            DefaultEdgeShape,
+                            S,
+                            L,
+                        >::new(&mut self.graph)
+                        .with_navigations(
+                            &(SettingsNavigation::new())
+                                .with_fit_to_screen_enabled(false)
+                                .with_zoom_and_pan_enabled(true)
+                                .with_zoom_speed(0.02),
+                        )
+                        .with_styles(
+                            &(SettingsStyle::new())
+                                .with_labels_always(true)
+                                .with_edge_stroke_hook(
+                                    |selected, order, mut current_stroke, egui_style| {
+                                        current_stroke.width = 0.5;
+                                        current_stroke.color = Color32::from_rgb(59, 59, 59);
+                                        egui_style
+                                            .label_style(egui::widget_style::WidgetState::Active);
+                                        return current_stroke;
+                                    },
+                                ),
+                        ),
                     )
-                    .with_styles(
-                        &(SettingsStyle::new())
-                            .with_labels_always(true)
-                            .with_edge_stroke_hook(
-                                |selected, order, mut current_stroke, egui_style| {
-                                    current_stroke.width = 0.5;
-                                    current_stroke.color = Color32::WHITE;
-                                    egui_style.label_style(egui::widget_style::WidgetState::Active);
-                                    return current_stroke;
-                                },
-                            ),
-                    ),
-                )
+                });
             });
-        });
     }
 }

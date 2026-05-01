@@ -45,7 +45,7 @@ impl DisplayNode<usize, String, Directed, u32> for TuringStateNode {
         let circle_radius = ctx.meta.canvas_to_screen_size(self.radius);
         let color = self.inner_color;
         let stroke = Stroke::new(1.5, Color32::WHITE);
-        let galley = self.label_galley(ctx, self.radius, Color32::GRAY);
+        let galley = self.label_galley(ctx, self.radius, Color32::WHITE);
         res.push(
             CircleShape {
                 center: circle_center,
@@ -68,7 +68,7 @@ impl DisplayNode<usize, String, Directed, u32> for TuringStateNode {
             galley,
             circle_center,
             circle_radius,
-            Color32::GRAY,
+            Color32::WHITE,
         ));
         return res;
     }
@@ -81,7 +81,7 @@ impl DisplayNode<usize, String, Directed, u32> for TuringStateNode {
         self.label_text = state.label.to_string();
         self.outer_color = state.color().unwrap_or(Color32::GRAY);
         self.inner_color = match self.selected {
-            true => Color32::from_rgb(238, 227, 124),
+            true => Color32::from_rgb(54, 172, 21),
             false => Color32::from_rgb(33, 33, 33),
         };
     }
