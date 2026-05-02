@@ -184,6 +184,121 @@ impl RuToDoUI {
         self.popup_title = String::from(title);
         self.popup_shown = true;
     }
+    fn add_vertex_on_click(&mut self) {
+        self.machine.add_vertex_button_handler();
+        self.show_popup("Vertex Created", "Success");
+        self.trigger_graph_update_next_frame();
+    }
+    fn add_transition_on_click(&mut self) {
+        if let (Ok(from), Ok(to)) = (
+            self.from_transition_field.parse::<usize>(),
+            self.to_transition_field.parse::<usize>(),
+        ) && !self.write_transition_field.is_empty()
+            && !self.accept_transition_field.is_empty()
+            && self
+                .machine
+                .add_transition(
+                    &from,
+                    &to,
+                    &self.write_transition_field,
+                    &self.accept_transition_field,
+                    &self.transition_move_opt,
+                )
+                .is_ok()
+        {
+            self.show_popup("Transition created", "Success");
+            self.trigger_graph_update_next_frame();
+        } else {
+            self.show_error_popup("Error creating transition!");
+            self.to_transition_field.clear();
+            self.from_transition_field.clear();
+        }
+    }
+    fn process_string_on_click(&mut self) {
+        if !self.string_to_process.is_empty() {
+            self.tape = TuringTape::from_string_input(&self.string_to_process);
+            self.show_popup("string processed", "Success");
+        }
+    }
+    fn step_on_click(&mut self) {
+        self.machine
+            .step(&mut self.tape, &mut self.current_state_index);
+        self.trigger_graph_update_next_frame();
+    }
+    fn reset_tape_on_click(&mut self) {
+        self.tape = TuringTape::from_string_input("");
+        self.current_state_index = self.machine.get_start_state();
+        self.trigger_graph_update_next_frame();
+        self.show_popup("Tape Reset", "Success");
+    }
+    fn make_state_starting_on_click(&mut self) {
+        if let Ok(state_index_parsed) = self.state_modifications_string_input.parse::<usize>()
+            && self.machine.set_start_state(state_index_parsed)
+        {
+            self.show_popup(
+                &format!("Stating state is now Q{}", state_index_parsed),
+                "Success",
+            );
+            self.trigger_graph_update_next_frame();
+        } else {
+            self.show_error_popup("Unable to change starting state");
+            self.state_modifications_string_input.clear();
+        }
+    }
+    fn make_state_accepting_on_click(&mut self) {
+        if let Ok(state_index_parsed) = self.state_modifications_string_input.parse::<usize>() {
+            if let Ok(new_state_acception) = self.machine.toggle_state_acception(state_index_parsed)
+            {
+                self.show_popup(
+                    &format!("State Q{} changed to {}", state_index_parsed, {
+                        if new_state_acception {
+                            "accepting"
+                        } else {
+                            "not accepting"
+                        }
+                    }),
+                    "Success",
+                );
+                self.trigger_graph_update_next_frame();
+            } else {
+                self.show_error_popup("State out of bounds");
+                self.state_modifications_string_input.clear();
+            }
+        } else {
+            self.show_error_popup("Unable to parse state");
+            self.state_modifications_string_input.clear();
+        }
+    }
+    fn delete_state_on_click(&mut self) {
+        if let Ok(state_index_parsed) = self.state_modifications_string_input.parse::<usize>() {
+            if self.machine.delete_state_with_index(&state_index_parsed) {
+                self.show_popup(
+                    &format!("State Q{} has been removed", state_index_parsed),
+                    "Success",
+                );
+                self.trigger_graph_update_next_frame();
+            } else {
+                self.show_error_popup("State indicated is out of bounds");
+            }
+        } else {
+            self.show_error_popup("Unable to parse state ");
+        }
+    }
+    fn strip_state_on_click(&mut self) {
+        if let Ok(state_index_parsed) = self.state_modifications_string_input.parse::<usize>() {
+            if self.machine.strip_state_with_index(&state_index_parsed) {
+                self.show_popup(
+                    &format!("State Q{} stripped of transitions", state_index_parsed),
+                    "Success",
+                );
+                self.trigger_graph_update_next_frame();
+            } else {
+                self.show_error_popup("State indicated is out of bounds");
+            }
+        } else {
+            self.show_error_popup("Unable to parse state ");
+        }
+    }
 }
 impl eframe::App for RuToDoUI {
     // ── Top Frame ─────────────────────────────────────────────────────────
@@ -229,9 +344,7 @@ impl eframe::App for RuToDoUI {
                         );
 
                         if ui.add(vertex_create_button).clicked() {
-                            self.machine.add_vertex_button_handler();
-                            self.show_popup("Vertex Created", "Success");
-                            self.trigger_graph_update_next_frame();
+                            self.add_vertex_on_click();
                         }
                     });
                     ui.separator();
@@ -295,29 +408,7 @@ impl eframe::App for RuToDoUI {
                                     ui.available_height(),
                                 ));
                             if ui.add(add_transition_button).clicked() {
-                                if let (Ok(from), Ok(to)) = (
-                                    self.from_transition_field.parse::<usize>(),
-                                    self.to_transition_field.parse::<usize>(),
-                                ) && !self.write_transition_field.is_empty()
-                                    && !self.accept_transition_field.is_empty()
-                                    && self
-                                        .machine
-                                        .add_transition(
-                                            &from,
-                                            &to,
-                                            &self.write_transition_field,
-                                            &self.accept_transition_field,
-                                            &self.transition_move_opt,
-                                        )
-                                        .is_ok()
-                                {
-                                    self.show_popup("Transition created", "Success");
-                                    self.trigger_graph_update_next_frame();
-                                } else {
-                                    self.show_error_popup("Error creating transition!");
-                                    self.to_transition_field.clear();
-                                    self.from_transition_field.clear();
-                                }
+                                self.add_transition_on_click();
                             }
                         });
                     });
@@ -334,10 +425,7 @@ impl eframe::App for RuToDoUI {
                             .min_size(egui::Vec2::new(ui.available_width(), 25.0));
 
                         if ui.add(string_process_button).clicked() {
-                            if !self.string_to_process.is_empty() {
-                                self.tape = TuringTape::from_string_input(&self.string_to_process);
-                                self.show_popup("string processed", "Success");
-                            }
+                            self.process_string_on_click();
                         }
                     });
                     ui.separator();
@@ -351,9 +439,7 @@ impl eframe::App for RuToDoUI {
                             )
                             .clicked()
                         {
-                            self.machine
-                                .step(&mut self.tape, &mut self.current_state_index);
-                            self.trigger_graph_update_next_frame();
+                            self.step_on_click();
                         }
                         ui.end_row();
                         let reset_button = egui::Button::new("Reset Tape");
@@ -361,10 +447,7 @@ impl eframe::App for RuToDoUI {
                             .add_sized([ui.available_width(), ui.available_height()], reset_button)
                             .clicked()
                         {
-                            self.tape = TuringTape::from_string_input("");
-                            self.current_state_index = self.machine.get_start_state();
-                            self.trigger_graph_update_next_frame();
-                            self.show_popup("Tape Reset", "Success");
+                            self.reset_tape_on_click();
                         }
                     });
                     ui.separator();
@@ -384,19 +467,7 @@ impl eframe::App for RuToDoUI {
                                 )
                                 .clicked()
                             {
-                                if let Ok(state_index_parsed) =
-                                    self.state_modifications_string_input.parse::<usize>()
-                                    && self.machine.set_start_state(state_index_parsed)
-                                {
-                                    self.show_popup(
-                                        &format!("Stating state is now Q{}", state_index_parsed),
-                                        "Success",
-                                    );
-                                    self.trigger_graph_update_next_frame();
-                                } else {
-                                    self.show_error_popup("Unable to change starting state");
-                                    self.state_modifications_string_input.clear();
-                                }
+                                self.make_state_starting_on_click();
                             }
                             let make_state_accepting = egui::Button::new("Toggle/Accepting");
                             if ui
@@ -406,35 +477,7 @@ impl eframe::App for RuToDoUI {
                                 )
                                 .clicked()
                             {
-                                if let Ok(state_index_parsed) =
-                                    self.state_modifications_string_input.parse::<usize>()
-                                {
-                                    if let Ok(new_state_acception) =
-                                        self.machine.toggle_state_acception(state_index_parsed)
-                                    {
-                                        self.show_popup(
-                                            &format!(
-                                                "State Q{} changed to {}",
-                                                state_index_parsed,
-                                                {
-                                                    if new_state_acception {
-                                                        "accepting"
-                                                    } else {
-                                                        "not accepting"
-                                                    }
-                                                }
-                                            ),
-                                            "Success",
-                                        );
-                                        self.trigger_graph_update_next_frame();
-                                    } else {
-                                        self.show_error_popup("State out of bounds");
-                                        self.state_modifications_string_input.clear();
-                                    }
-                                } else {
-                                    self.show_error_popup("Unable to parse state");
-                                    self.state_modifications_string_input.clear();
-                                }
+                                self.make_state_accepting_on_click();
                             }
                             let make_state_not_exist = egui::Button::new("Not Exist");
                             if ui
@@ -444,24 +487,7 @@ impl eframe::App for RuToDoUI {
                                 )
                                 .clicked()
                             {
-                                if let Ok(state_index_parsed) =
-                                    self.state_modifications_string_input.parse::<usize>()
-                                {
-                                    if self.machine.delete_state_with_index(&state_index_parsed) {
-                                        self.show_popup(
-                                            &format!(
-                                                "State Q{} has been removed",
-                                                state_index_parsed
-                                            ),
-                                            "Success",
-                                        );
-                                        self.trigger_graph_update_next_frame();
-                                    } else {
-                                        self.show_error_popup("State indicated is out of bounds");
-                                    }
-                                } else {
-                                    self.show_error_popup("Unable to parse state ");
-                                }
+                                self.delete_state_on_click();
                             }
                             let make_state_have_no_transitions =
                                 egui::Button::new("Transitionless");
@@ -472,24 +498,7 @@ impl eframe::App for RuToDoUI {
                                 )
                                 .clicked()
                             {
-                                if let Ok(state_index_parsed) =
-                                    self.state_modifications_string_input.parse::<usize>()
-                                {
-                                    if self.machine.strip_state_with_index(&state_index_parsed) {
-                                        self.show_popup(
-                                            &format!(
-                                                "State Q{} stripped of transitions",
-                                                state_index_parsed
-                                            ),
-                                            "Success",
-                                        );
-                                        self.trigger_graph_update_next_frame();
-                                    } else {
-                                        self.show_error_popup("State indicated is out of bounds");
-                                    }
-                                } else {
-                                    self.show_error_popup("Unable to parse state ");
-                                }
+                                self.strip_state_on_click();
                             }
                         });
                     });
