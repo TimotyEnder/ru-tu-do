@@ -43,9 +43,6 @@ pub struct RuToDoUI {
     graph_updated: bool,
     node_count_in_graph: usize,
     last_node_pos: Vec2,
-    first_node_or_row_pos_x: f32,
-    nodes_for_next_row: usize,
-    current_nodes_in_row: usize,
 }
 impl Default for RuToDoUI {
     fn default() -> Self {
@@ -70,9 +67,6 @@ impl Default for RuToDoUI {
             graph_updated: false,
             node_count_in_graph: 0,
             last_node_pos: Vec2 { x: 0.0, y: 0.0 },
-            first_node_or_row_pos_x: 0.0,
-            nodes_for_next_row: 2,
-            current_nodes_in_row: 1,
         };
     }
 }
