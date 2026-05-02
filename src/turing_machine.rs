@@ -10,8 +10,9 @@ pub struct TuringMachine {
 }
 impl TuringMachine {
     pub fn set_start_state(&mut self, state: usize) -> bool {
-        if (0..=self.vertices.len()).contains(&state) {
-            self.start_state = state;
+        let real_state_index = self.index_name_to_real_index(&state);
+        if (0..=self.vertices.len()).contains(&real_state_index) {
+            self.start_state = real_state_index;
             return true;
         }
         return false;
@@ -50,6 +51,9 @@ impl TuringMachine {
             it += 1;
         }
         self.vertices.remove(real_state_index);
+        if self.start_state == real_state_index {
+            self.start_state = 0;
+        }
         return true;
     }
     pub fn strip_state_with_index(&mut self, index: &usize) -> bool {
@@ -63,13 +67,14 @@ impl TuringMachine {
     pub fn get_start_state(&self) -> usize {
         return self.start_state;
     }
-    pub fn toggle_state_acception(&mut self, state_index: usize) -> Result<bool, &'static str> {
-        if (0..=(self.vertices.len() - 1)).contains(&state_index) {
-            if self.vertices[state_index].accepting {
-                self.vertices[state_index].accepting = false;
+    pub fn toggle_state_acception(&mut self, state_index: &usize) -> Result<bool, &'static str> {
+        let real_index = self.index_name_to_real_index(state_index);
+        if (0..=(self.vertices.len() - 1)).contains(&real_index) {
+            if self.vertices[real_index].accepting {
+                self.vertices[real_index].accepting = false;
                 return Ok(false);
             } else {
-                self.vertices[state_index].accepting = true;
+                self.vertices[real_index].accepting = true;
                 return Ok(true);
             }
         } else {

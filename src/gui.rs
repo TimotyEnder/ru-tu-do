@@ -247,7 +247,8 @@ impl RuToDoUI {
     }
     fn make_state_accepting_on_click(&mut self) {
         if let Ok(state_index_parsed) = self.state_modifications_string_input.parse::<usize>() {
-            if let Ok(new_state_acception) = self.machine.toggle_state_acception(state_index_parsed)
+            if let Ok(new_state_acception) =
+                self.machine.toggle_state_acception(&state_index_parsed)
             {
                 self.show_popup(
                     &format!("State Q{} changed to {}", state_index_parsed, {
@@ -271,14 +272,18 @@ impl RuToDoUI {
     }
     fn delete_state_on_click(&mut self) {
         if let Ok(state_index_parsed) = self.state_modifications_string_input.parse::<usize>() {
-            if self.machine.delete_state_with_index(&state_index_parsed) {
-                self.show_popup(
-                    &format!("State Q{} has been removed", state_index_parsed),
-                    "Success",
-                );
-                self.trigger_graph_update_next_frame();
+            if self.machine.vertices.len() > 0 {
+                if self.machine.delete_state_with_index(&state_index_parsed) {
+                    self.show_popup(
+                        &format!("State Q{} has been removed", state_index_parsed),
+                        "Success",
+                    );
+                    self.trigger_graph_update_next_frame();
+                } else {
+                    self.show_error_popup("State indicated is out of bounds");
+                }
             } else {
-                self.show_error_popup("State indicated is out of bounds");
+                self.show_error_popup("cannot delete last state");
             }
         } else {
             self.show_error_popup("Unable to parse state ");
