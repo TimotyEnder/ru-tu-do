@@ -1,4 +1,7 @@
-use std::collections::{HashSet, VecDeque};
+use std::{
+    collections::{HashSet, VecDeque},
+    usize::MAX,
+};
 static BLANK_CELL_DEFAULT_CHAR: &str = "#";
 pub struct TuringMachine {
     pub vertices: Vec<TuringVertex>,
@@ -21,17 +24,18 @@ impl TuringMachine {
         }
         let mut it: usize = 0;
         for vertex in &mut self.vertices {
-            if (it != index) {
+            if it != index {
                 for transition in &mut vertex.transitions {
                     if transition.next_state_index == Some(index) {
                         transition.next_state_index = None;
                     } else if let Some(value) = transition.next_state_index {
-                        if (value > index) {
+                        if value > index {
                             transition.next_state_index = Some(value - 1);
                         }
                     }
                 }
             }
+            it += 1;
         }
         self.vertices.remove(index);
         return true;
@@ -63,7 +67,7 @@ impl TuringMachine {
                 transitions: Vec::<TuringTransition>::new(),
                 set_of_accepted_strings_from_vertex: HashSet::<String>::new(),
                 accepting: list_of_accepting.contains(&i),
-                vertex_name: to_ret.node_name_counter.to_string(),
+                vertex_name: to_ret.node_name_counter,
             });
             to_ret.node_name_counter += 1;
         }
@@ -79,7 +83,7 @@ impl TuringMachine {
             transitions: Vec::<TuringTransition>::new(),
             set_of_accepted_strings_from_vertex: HashSet::<String>::new(),
             accepting: false,
-            vertex_name: String::from("0"),
+            vertex_name: 0,
         });
         return to_ret;
     }
@@ -96,10 +100,24 @@ impl TuringMachine {
             "right" | "r" => MovementDirection::Right,
             _ => return Err("Invalid move direction, accepts only 'Left' or 'Right'"),
         };
-        if !(0..self.vertices.len()).contains(&from) || !(0..self.vertices.len()).contains(&to) {
+        let mut from_real_index = MAX;
+        let mut to_real_index = MAX;
+        let mut it = 0;
+        for vertex in &self.vertices {
+            if vertex.vertex_name == to {
+                to_real_index = it;
+            }
+            if vertex.vertex_name == from {
+                from_real_index = it;
+            }
+            it += 1;
+        }
+        if !(0..self.vertices.len()).contains(&from_real_index)
+            || !(0..self.vertices.len()).contains(&to_real_index)
+        {
             return Err("Trying to add edges to vertices outside of the machine's scope.");
-        } else if !self.vertices[from].add_transition(
-            to,
+        } else if !self.vertices[from_real_index].add_transition(
+            to_real_index,
             to_write,
             accepted_string,
             move_dir_parsed,
@@ -118,7 +136,7 @@ impl TuringMachine {
             transitions: Vec::<TuringTransition>::new(),
             set_of_accepted_strings_from_vertex: HashSet::<String>::new(),
             accepting: false,
-            vertex_name: self.node_name_counter.to_string(),
+            vertex_name: self.node_name_counter,
         };
         self.node_name_counter += 1;
         self.vertices.push(vertex);
@@ -168,7 +186,7 @@ pub struct TuringVertex {
     pub transitions: Vec<TuringTransition>,
     pub set_of_accepted_strings_from_vertex: HashSet<String>,
     pub accepting: bool,
-    pub vertex_name: String,
+    pub vertex_name: usize,
 }
 impl<'a> TuringVertex {
     fn add_transition(
