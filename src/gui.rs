@@ -162,7 +162,7 @@ impl RuToDoUI {
             egui::Window::new(&self.popup_title)
                 .collapsible(false)
                 .resizable(false)
-                .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::ZERO)
+                .anchor(egui::Align2::RIGHT_BOTTOM, egui::Vec2::ZERO)
                 .fixed_size([100.0, 50.0])
                 .show(ctx, |ui| {
                     ui.label(&*self.popup_text);
