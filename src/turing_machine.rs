@@ -16,20 +16,32 @@ impl TuringMachine {
         }
         return false;
     }
-    pub fn delete_state_with_index(&mut self, index: usize) -> bool {
+    fn index_name_to_real_index(&self, index: &usize) -> usize {
+        let mut real_state_index = MAX;
+        let mut it = 0;
+        for vertex in &self.vertices {
+            if vertex.vertex_name == *index {
+                real_state_index = it;
+            }
+            it += 1;
+        }
+        return real_state_index;
+    }
+    pub fn delete_state_with_index(&mut self, index: &usize) -> bool {
         //shift all vetices above the index down by one
         //delete all transition to that state on the way.
-        if !(0..=self.vertices.len() - 1).contains(&index) {
+        let real_state_index = self.index_name_to_real_index(index);
+        if !(0..=self.vertices.len() - 1).contains(&real_state_index) {
             return false;
         }
         let mut it: usize = 0;
         for vertex in &mut self.vertices {
-            if it != index {
+            if it != real_state_index {
                 for transition in &mut vertex.transitions {
-                    if transition.next_state_index == Some(index) {
+                    if transition.next_state_index == Some(real_state_index) {
                         transition.next_state_index = None;
                     } else if let Some(value) = transition.next_state_index {
-                        if value > index {
+                        if value > real_state_index {
                             transition.next_state_index = Some(value - 1);
                         }
                     }
@@ -37,7 +49,15 @@ impl TuringMachine {
             }
             it += 1;
         }
-        self.vertices.remove(index);
+        self.vertices.remove(real_state_index);
+        return true;
+    }
+    pub fn strip_state_with_index(&mut self, index: &usize) -> bool {
+        let real_index = self.index_name_to_real_index(index);
+        if !(0..=self.vertices.len() - 1).contains(&real_index) {
+            return false;
+        }
+        self.vertices[real_index].transitions.clear();
         return true;
     }
     pub fn get_start_state(&self) -> usize {
@@ -89,8 +109,8 @@ impl TuringMachine {
     }
     pub fn add_transition(
         &mut self,
-        from: usize,
-        to: usize,
+        from: &usize,
+        to: &usize,
         to_write: &str,
         accepted_string: &str,
         move_direction: &str,
@@ -100,18 +120,8 @@ impl TuringMachine {
             "right" | "r" => MovementDirection::Right,
             _ => return Err("Invalid move direction, accepts only 'Left' or 'Right'"),
         };
-        let mut from_real_index = MAX;
-        let mut to_real_index = MAX;
-        let mut it = 0;
-        for vertex in &self.vertices {
-            if vertex.vertex_name == to {
-                to_real_index = it;
-            }
-            if vertex.vertex_name == from {
-                from_real_index = it;
-            }
-            it += 1;
-        }
+        let from_real_index = self.index_name_to_real_index(from);
+        let to_real_index = self.index_name_to_real_index(to);
         if !(0..self.vertices.len()).contains(&from_real_index)
             || !(0..self.vertices.len()).contains(&to_real_index)
         {

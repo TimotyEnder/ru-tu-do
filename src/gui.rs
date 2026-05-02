@@ -309,8 +309,8 @@ impl eframe::App for RuToDoUI {
                                     && self
                                         .machine
                                         .add_transition(
-                                            from,
-                                            to,
+                                            &from,
+                                            &to,
                                             &self.write_transition_field,
                                             &self.accept_transition_field,
                                             &self.transition_move_opt,
@@ -385,7 +385,7 @@ impl eframe::App for RuToDoUI {
                             let make_state_starting = egui::Button::new("Starting");
                             if ui
                                 .add_sized(
-                                    [ui.available_width() / 3.0, ui.available_height()],
+                                    [ui.available_width() / 4.5, ui.available_height()],
                                     make_state_starting,
                                 )
                                 .clicked()
@@ -407,7 +407,7 @@ impl eframe::App for RuToDoUI {
                             let make_state_accepting = egui::Button::new("Toggle/Accepting");
                             if ui
                                 .add_sized(
-                                    [ui.available_width() / 2.0, ui.available_height()],
+                                    [ui.available_width() / 3.5, ui.available_height()],
                                     make_state_accepting,
                                 )
                                 .clicked()
@@ -445,7 +445,7 @@ impl eframe::App for RuToDoUI {
                             let make_state_not_exist = egui::Button::new("Not Exist");
                             if ui
                                 .add_sized(
-                                    [ui.available_width(), ui.available_height()],
+                                    [ui.available_width() / 2.5, ui.available_height()],
                                     make_state_not_exist,
                                 )
                                 .clicked()
@@ -453,10 +453,38 @@ impl eframe::App for RuToDoUI {
                                 if let Ok(state_index_parsed) =
                                     self.state_modifications_string_input.parse::<usize>()
                                 {
-                                    if self.machine.delete_state_with_index(state_index_parsed) {
+                                    if self.machine.delete_state_with_index(&state_index_parsed) {
                                         self.show_popup(
                                             &format!(
                                                 "State Q{} has been removed",
+                                                state_index_parsed
+                                            ),
+                                            "Success",
+                                        );
+                                        self.trigger_graph_update_next_frame();
+                                    } else {
+                                        self.show_error_popup("State indicated is out of bounds");
+                                    }
+                                } else {
+                                    self.show_error_popup("Unable to parse state ");
+                                }
+                            }
+                            let make_state_have_no_transitions =
+                                egui::Button::new("Transitionless");
+                            if ui
+                                .add_sized(
+                                    [ui.available_width(), ui.available_height()],
+                                    make_state_have_no_transitions,
+                                )
+                                .clicked()
+                            {
+                                if let Ok(state_index_parsed) =
+                                    self.state_modifications_string_input.parse::<usize>()
+                                {
+                                    if self.machine.strip_state_with_index(&state_index_parsed) {
+                                        self.show_popup(
+                                            &format!(
+                                                "State Q{} stripped of transitions",
                                                 state_index_parsed
                                             ),
                                             "Success",
