@@ -43,7 +43,7 @@ impl DisplayNode<usize, String, Directed, u32> for TuringStateNode {
         let mut res: Vec<Shape> = Vec::with_capacity(2);
         let circle_center = ctx.meta.canvas_to_screen_pos(self.pos);
         let circle_radius = ctx.meta.canvas_to_screen_size(self.radius);
-        let color = self.inner_color;
+        let _color = self.inner_color;
         let stroke = Stroke::new(1.5, Color32::WHITE);
         let galley = self.label_galley(ctx, self.radius, Color32::WHITE);
         res.push(

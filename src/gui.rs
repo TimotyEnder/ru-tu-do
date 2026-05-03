@@ -14,10 +14,7 @@ use rand::{self, RngExt};
 
 type L = LayoutHierarchical;
 type S = LayoutStateHierarchical;
-use petgraph::{
-    Directed,
-    graph::{self, NodeIndex},
-};
+use petgraph::{Directed, graph::NodeIndex};
 pub struct RuToDoUI {
     from_transition_field: String,
     to_transition_field: String,
@@ -582,7 +579,7 @@ impl eframe::App for RuToDoUI {
                             &(SettingsStyle::new())
                                 .with_labels_always(true)
                                 .with_edge_stroke_hook(
-                                    |selected, order, mut current_stroke, egui_style| {
+                                    |_selected, _order, mut current_stroke, egui_style| {
                                         current_stroke.width = 0.5;
                                         current_stroke.color = Color32::from_rgb(59, 59, 59);
                                         egui_style
