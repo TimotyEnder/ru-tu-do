@@ -103,11 +103,14 @@ impl RuToDoUI {
                 if let Some(node) = self.graph.node_mut(NodeIndex::new(i)) {
                     node.set_selected(self.machine.vertices[i].accepting);
                     if self.machine.get_start_state() == i {
-                        node.set_color(Color32::from_hex("#7C87EE").unwrap_or(Color32::PURPLE));
                         node.set_label(format!("->Q{}", self.machine.vertices[i].vertex_name));
                     } else {
-                        node.set_color(Color32::from_rgb(94, 94, 94));
                         node.set_label(format!("Q{}", self.machine.vertices[i].vertex_name));
+                    }
+                    if self.current_state_index == i {
+                        node.set_color(Color32::from_hex("#7C87EE").unwrap_or(Color32::PURPLE));
+                    } else {
+                        node.set_color(Color32::from_rgb(94, 94, 94));
                     }
                 }
             }

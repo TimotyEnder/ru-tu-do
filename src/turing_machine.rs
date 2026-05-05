@@ -175,8 +175,8 @@ impl TuringMachine {
         );
     }
     pub fn step(&self, tape: &mut TuringTape, current_state: &mut usize) -> bool {
-        if let Some(direction) =
-            self.vertices[*current_state].write_and_next_move(tape, current_state)
+        let real_index = self.index_name_to_real_index(&current_state);
+        if let Some(direction) = self.vertices[real_index].write_and_next_move(tape, current_state)
         {
             tape.move_tape(direction);
             return true;
